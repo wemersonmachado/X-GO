@@ -63,9 +63,13 @@ test.describe("Criar um agente pela tela", () => {
     // O que a pessoa já digitou deixa de morar só no navegador. Depois do
     // indicador de salvamento, sair e reabrir /new recupera o mesmo registro.
     const nomeParcial = `Rascunho persistente ${Date.now()}`;
-    await page.locator("#name").fill(nomeParcial);
-    // O estado transitório pode acabar entre dois polls; o dado persistido é
-    // a pós-condição. Aguarde a resposta do autosave e prove reabertura abaixo.
+    // A primeira pintura vem do servidor. Se o preenchimento ocorrer antes da
+    // hidratação, o React repõe o valor vazio e nenhum autosave é disparado.
+    // O estado "Salvando" prova que o evento chegou ao formulário hidratado.
+    await expect(async () => {
+      await page.locator("#name").fill(nomeParcial);
+      await expect(page.getByText(/salvando rascunho/i).first()).toBeVisible({ timeout: 2_000 });
+    }).toPass({ timeout: 15_000 });
     await expect(page.getByText(/rascunho salvo/i).first()).toBeVisible({ timeout: 15_000 });
     await expect(async () => {
       const response = await page.request.get("/api/v1/ai/agents");
