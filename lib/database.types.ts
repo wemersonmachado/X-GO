@@ -34,6 +34,667 @@ export type Database = {
   }
   public: {
     Tables: {
+      finance_accounts: {
+        Row: {
+          active: boolean
+          created_at: string
+          currency: string
+          id: string
+          kind: string
+          name: string
+          organization_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          id?: string
+          kind: string
+          name: string
+          organization_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          id?: string
+          kind?: string
+          name?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_accounts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_agent_permissions: {
+        Row: {
+          agent_id: string
+          created_at: string
+          id: string
+          max_amount_cents: number | null
+          mode: string
+          operation: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          id?: string
+          max_amount_cents?: number | null
+          mode: string
+          operation: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          id?: string
+          max_amount_cents?: number | null
+          mode?: string
+          operation?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_agent_permissions_organization_id_agent_id_fkey"
+            columns: ["organization_id", "agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_agent_permissions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_categories: {
+        Row: {
+          active: boolean
+          created_at: string
+          direction: string
+          id: string
+          name: string
+          organization_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          direction: string
+          id?: string
+          name: string
+          organization_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          direction?: string
+          id?: string
+          name?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_categories_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_chart_accounts: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          direction: string
+          id: string
+          name: string
+          organization_id: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          direction: string
+          id?: string
+          name: string
+          organization_id: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          direction?: string
+          id?: string
+          name?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_chart_accounts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_cost_centers: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_cost_centers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_documents: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          entry_id: string | null
+          file_name: string
+          id: string
+          mime_type: string
+          organization_id: string
+          proposal_id: string | null
+          sha256: string
+          size_bytes: number
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          entry_id?: string | null
+          file_name: string
+          id?: string
+          mime_type: string
+          organization_id: string
+          proposal_id?: string | null
+          sha256: string
+          size_bytes: number
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          entry_id?: string | null
+          file_name?: string
+          id?: string
+          mime_type?: string
+          organization_id?: string
+          proposal_id?: string | null
+          sha256?: string
+          size_bytes?: number
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_documents_entry_org_fk"
+            columns: ["organization_id", "entry_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entries"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_documents_organization_id_proposal_id_fkey"
+            columns: ["organization_id", "proposal_id"]
+            isOneToOne: false
+            referencedRelation: "finance_proposals"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
+      finance_entries: {
+        Row: {
+          account_id: string | null
+          amount_cents: number
+          approved_by_user_id: string | null
+          category_id: string | null
+          chart_account_id: string | null
+          competence_date: string | null
+          cost_center_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency: string
+          description: string
+          direction: string
+          due_date: string
+          id: string
+          notes: string | null
+          organization_id: string
+          revision: number
+          settled_amount_cents: number | null
+          settled_at: string | null
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount_cents: number
+          approved_by_user_id?: string | null
+          category_id?: string | null
+          chart_account_id?: string | null
+          competence_date?: string | null
+          cost_center_id?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          currency?: string
+          description: string
+          direction: string
+          due_date: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          revision?: number
+          settled_amount_cents?: number | null
+          settled_at?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          amount_cents?: number
+          approved_by_user_id?: string | null
+          category_id?: string | null
+          chart_account_id?: string | null
+          competence_date?: string | null
+          cost_center_id?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          currency?: string
+          description?: string
+          direction?: string
+          due_date?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          revision?: number
+          settled_amount_cents?: number | null
+          settled_at?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_entries_account_org_fk"
+            columns: ["organization_id", "account_id"]
+            isOneToOne: false
+            referencedRelation: "finance_accounts"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_entries_category_org_fk"
+            columns: ["organization_id", "category_id"]
+            isOneToOne: false
+            referencedRelation: "finance_categories"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_entries_chart_org_fk"
+            columns: ["organization_id", "chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "finance_chart_accounts"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_entries_cost_center_org_fk"
+            columns: ["organization_id", "cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "finance_cost_centers"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_entries_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_fiscal_requests: {
+        Row: {
+          approved_at: string
+          approved_by_user_id: string | null
+          country: string
+          created_at: string
+          document_kind: string
+          entry_id: string
+          id: string
+          idempotency_key: string
+          municipality_code: string
+          organization_id: string
+          provider_key: string | null
+          provider_receipt: string | null
+          request_fingerprint: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at: string
+          approved_by_user_id?: string | null
+          country?: string
+          created_at?: string
+          document_kind: string
+          entry_id: string
+          id?: string
+          idempotency_key: string
+          municipality_code: string
+          organization_id: string
+          provider_key?: string | null
+          provider_receipt?: string | null
+          request_fingerprint: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string
+          approved_by_user_id?: string | null
+          country?: string
+          created_at?: string
+          document_kind?: string
+          entry_id?: string
+          id?: string
+          idempotency_key?: string
+          municipality_code?: string
+          organization_id?: string
+          provider_key?: string | null
+          provider_receipt?: string | null
+          request_fingerprint?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_fiscal_requests_organization_id_entry_id_fkey"
+            columns: ["organization_id", "entry_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entries"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_fiscal_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_import_batches: {
+        Row: {
+          account_id: string
+          created_at: string
+          created_by_user_id: string | null
+          file_name: string
+          file_sha256: string
+          format: string
+          id: string
+          organization_id: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          file_name: string
+          file_sha256: string
+          format: string
+          id?: string
+          organization_id: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          file_name?: string
+          file_sha256?: string
+          format?: string
+          id?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_import_batches_organization_id_account_id_fkey"
+            columns: ["organization_id", "account_id"]
+            isOneToOne: false
+            referencedRelation: "finance_accounts"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_import_batches_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_import_movements: {
+        Row: {
+          account_id: string
+          amount_cents: number
+          batch_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by_user_id: string | null
+          description: string
+          direction: string
+          external_id: string
+          id: string
+          matched_entry_id: string | null
+          occurred_on: string
+          organization_id: string
+          revision: number
+          status: string
+        }
+        Insert: {
+          account_id: string
+          amount_cents: number
+          batch_id: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by_user_id?: string | null
+          description: string
+          direction: string
+          external_id: string
+          id?: string
+          matched_entry_id?: string | null
+          occurred_on: string
+          organization_id: string
+          revision?: number
+          status?: string
+        }
+        Update: {
+          account_id?: string
+          amount_cents?: number
+          batch_id?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by_user_id?: string | null
+          description?: string
+          direction?: string
+          external_id?: string
+          id?: string
+          matched_entry_id?: string | null
+          occurred_on?: string
+          organization_id?: string
+          revision?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_import_match_org_fk"
+            columns: ["organization_id", "matched_entry_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entries"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_import_movements_organization_id_account_id_fkey"
+            columns: ["organization_id", "account_id"]
+            isOneToOne: false
+            referencedRelation: "finance_accounts"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_import_movements_organization_id_batch_id_fkey"
+            columns: ["organization_id", "batch_id"]
+            isOneToOne: false
+            referencedRelation: "finance_import_batches"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_import_movements_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_proposals: {
+        Row: {
+          agent_id: string
+          amount_cents: number
+          approved_at: string | null
+          approved_by_user_id: string | null
+          created_at: string
+          currency: string
+          description: string
+          direction: string | null
+          due_date: string | null
+          evidence_note: string | null
+          id: string
+          operation: string
+          organization_id: string
+          request_fingerprint: string
+          resulting_entry_id: string | null
+          revision: number
+          source_request_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          amount_cents: number
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          created_at?: string
+          currency?: string
+          description: string
+          direction?: string | null
+          due_date?: string | null
+          evidence_note?: string | null
+          id?: string
+          operation: string
+          organization_id: string
+          request_fingerprint: string
+          resulting_entry_id?: string | null
+          revision?: number
+          source_request_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          amount_cents?: number
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          created_at?: string
+          currency?: string
+          description?: string
+          direction?: string | null
+          due_date?: string | null
+          evidence_note?: string | null
+          id?: string
+          operation?: string
+          organization_id?: string
+          request_fingerprint?: string
+          resulting_entry_id?: string | null
+          revision?: number
+          source_request_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_proposals_organization_id_agent_id_fkey"
+            columns: ["organization_id", "agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_proposals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_proposals_result_org_fk"
+            columns: ["organization_id", "resulting_entry_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entries"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_proposals_resulting_entry_id_fkey"
+            columns: ["resulting_entry_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_reply_drafts: {
         Row: {
           id: string;
@@ -7546,6 +8207,172 @@ export type Database = {
       }
     }
     Functions: {
+      fn_finance_classify_entry: {
+        Args: {
+          p_account: string
+          p_actor: string
+          p_chart_account: string
+          p_competence_date: string
+          p_id: string
+          p_org: string
+          p_revision: number
+        }
+        Returns: {
+          account_id: string | null
+          amount_cents: number
+          approved_by_user_id: string | null
+          category_id: string | null
+          chart_account_id: string | null
+          competence_date: string | null
+          cost_center_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency: string
+          description: string
+          direction: string
+          due_date: string
+          id: string
+          notes: string | null
+          organization_id: string
+          revision: number
+          settled_amount_cents: number | null
+          settled_at: string | null
+          source: string
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "finance_entries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      fn_finance_decide_proposal: {
+        Args: {
+          p_action: string
+          p_actor: string
+          p_id: string
+          p_org: string
+          p_revision: number
+        }
+        Returns: {
+          agent_id: string
+          amount_cents: number
+          approved_at: string | null
+          approved_by_user_id: string | null
+          created_at: string
+          currency: string
+          description: string
+          direction: string | null
+          due_date: string | null
+          evidence_note: string | null
+          id: string
+          operation: string
+          organization_id: string
+          request_fingerprint: string
+          resulting_entry_id: string | null
+          revision: number
+          source_request_id: string
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "finance_proposals"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      fn_finance_import_statement: {
+        Args: {
+          p_account: string
+          p_actor: string
+          p_file_name: string
+          p_format: string
+          p_hash: string
+          p_movements: Json
+          p_org: string
+        }
+        Returns: {
+          batch_id: string
+          duplicate: boolean
+          imported_count: number
+        }[]
+      }
+      fn_finance_reconcile_movement: {
+        Args: {
+          p_action: string
+          p_actor: string
+          p_entry: string
+          p_movement: string
+          p_org: string
+          p_revision: number
+        }
+        Returns: {
+          account_id: string
+          amount_cents: number
+          batch_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by_user_id: string | null
+          description: string
+          direction: string
+          external_id: string
+          id: string
+          matched_entry_id: string | null
+          occurred_on: string
+          organization_id: string
+          revision: number
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "finance_import_movements"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      fn_finance_transition_entry: {
+        Args: {
+          p_action: string
+          p_actor: string
+          p_id: string
+          p_org: string
+          p_revision: number
+          p_settled_amount?: number
+        }
+        Returns: {
+          account_id: string | null
+          amount_cents: number
+          approved_by_user_id: string | null
+          category_id: string | null
+          chart_account_id: string | null
+          competence_date: string | null
+          cost_center_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency: string
+          description: string
+          direction: string
+          due_date: string
+          id: string
+          notes: string | null
+          organization_id: string
+          revision: number
+          settled_amount_cents: number | null
+          settled_at: string | null
+          source: string
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "finance_entries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       fn_channel_routing_claim: {
         Args: {
           p_channel: string
