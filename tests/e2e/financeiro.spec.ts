@@ -74,8 +74,8 @@ test.describe("Financeiro — registro e aprovação humana", () => {
     await novo.getByLabel("Competência").fill("2026-09-15");
     await novo.getByLabel("Categoria").selectOption({ label: marcadorAvancado });
     await novo.getByLabel("Conta financeira").selectOption({ label: marcadorAvancado });
-    await novo.getByRole("button", { name: "Registrar" }).click();
-    await expect(page.getByText(marcadorAvancado).first()).toBeVisible();
+    await novo.getByRole("button", { name: "Registrar", exact: true }).click();
+    await expect(page.getByRole("region", { name: "Lançamentos" }).getByText(marcadorAvancado, { exact: true })).toBeVisible();
 
     const dre = page.getByRole("region", { name: "Plano de contas e DRE gerencial" });
     await dre.getByLabel("Código").fill("9.99");

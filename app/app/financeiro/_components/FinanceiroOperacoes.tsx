@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useT } from "@/hooks/i18n/useT";
 import type { LancamentoFinanceiro } from "@/lib/financeiro/tipos";
 import { formatCentsBRL } from "@/lib/money";
+import { randomId } from "@/lib/random-id";
 
 type Account = { id: string; name: string; active: boolean };
 type Chart = { id: string; code: string; name: string; direction: "receivable" | "payable"; active: boolean };
@@ -94,7 +95,7 @@ export function FinanceiroOperacoes({ entries, accounts, podeAprovar, onReload }
   const [fiscalEntry, setFiscalEntry] = useState("");
   const [municipality, setMunicipality] = useState("");
   const [fiscalKind, setFiscalKind] = useState<"nfse" | "nfe">("nfse");
-  const [fiscalKey, setFiscalKey] = useState(() => crypto.randomUUID());
+  const [fiscalKey, setFiscalKey] = useState(() => randomId());
   const [documentEntry, setDocumentEntry] = useState("");
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [documents, setDocuments] = useState<FinanceDocument[]>([]);
@@ -289,7 +290,7 @@ export function FinanceiroOperacoes({ entries, accounts, podeAprovar, onReload }
       });
       setFiscalEntry("");
       setMunicipality("");
-      setFiscalKey(crypto.randomUUID());
+      setFiscalKey(randomId());
       await refresh();
     }, t("Solicitação fiscal registrada na fila de integração."));
   }
