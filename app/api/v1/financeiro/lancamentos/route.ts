@@ -10,7 +10,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
-const COLUNAS = "id,direction,status,description,amount_cents,currency,due_date,notes,source,settled_amount_cents,settled_at,revision,created_at";
+const COLUNAS = "id,direction,status,description,amount_cents,currency,due_date,notes,source,settled_amount_cents,settled_at,revision,created_at,category_id,cost_center_id,account_id,chart_account_id,competence_date";
 const db = () => createAdminClient() as unknown as SupabaseClient;
 
 export async function GET(req: NextRequest): Promise<Response> {
@@ -50,6 +50,22 @@ export async function POST(req: NextRequest): Promise<Response> {
   const parsed = criarLancamentoSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return fail("validation_failed", parsed.error.issues[0]?.message ?? "Lançamento inválido.", 422, { requestId });
 
+  // IDs opcionais também pertencem à organização ativa; categoria segue a direção.
+  for (const [table, id] of [
+    ["finance_categories", parsed.data.category_id],
+    ["finance_cost_centers", parsed.data.cost_center_id],
+    ["finance_accounts", parsed.data.account_id],
+    ["finance_chart_accounts", parsed.data.chart_account_id],
+  ] as const) {
+    if (!id) continue;
+    const result = await db().from(table).select("*")
+      .eq("organization_id", auth.org.orgId).eq("id", id).maybeSingle();
+    if (result.error) return fail("internal_error", "Falha ao validar cadastro financeiro.", 500, { requestId });
+    if (!result.data?.active || ((table === "finance_categories" || table === "finance_chart_accounts") && result.data.direction !== parsed.data.direction)) {
+      return fail("validation_failed", "Cadastro financeiro inválido ou inativo.", 422, { requestId });
+    }
+  }
+
   const { data, error } = await db().from("finance_entries").insert({
     ...parsed.data, notes: parsed.data.notes || null, source: "manual", status: "open",
     organization_id: auth.org.orgId, created_by_user_id: auth.user.id,
@@ -81,16 +97,13 @@ export async function PATCH(req: NextRequest): Promise<Response> {
   if (action === "cancel" && atual.data.status !== "open") return fail("conflict", "Somente lançamento em aberto pode ser cancelado.", 409, { requestId });
   if (action === "reopen" && atual.data.status !== "cancelled") return fail("conflict", "Somente lançamento cancelado pode ser reaberto.", 409, { requestId });
 
-  const campos = action === "settle" ? {
-    status: "settled", settled_amount_cents: parsed.data.settled_amount_cents ?? Number(atual.data.amount_cents),
-    settled_at: new Date().toISOString(), approved_by_user_id: auth.user.id, revision: parsed.data.revision + 1,
-  } : {
-    status: action === "cancel" ? "cancelled" : "open", settled_amount_cents: null,
-    settled_at: null, approved_by_user_id: null, revision: parsed.data.revision + 1,
-  };
-  const { data, error } = await db().from("finance_entries").update(campos)
-    .eq("id", parsed.data.id).eq("organization_id", auth.org.orgId).eq("revision", parsed.data.revision)
-    .select(COLUNAS).maybeSingle();
+  const { data, error } = await db().rpc("fn_finance_transition_entry", {
+    p_org: auth.org.orgId, p_id: parsed.data.id, p_action: action,
+    p_revision: parsed.data.revision, p_actor: auth.user.id,
+    p_settled_amount: parsed.data.settled_amount_cents ?? null,
+  });
+  if (error?.code === "23514") return fail("conflict", "Lançamento conciliado exige o mesmo valor e não pode ser cancelado.", 409, { requestId });
+  if (error?.code === "40001") return fail("conflict", "O lançamento mudou. Atualize a tela antes de confirmar.", 409, { requestId });
   if (error) return fail("internal_error", "Falha ao alterar lançamento.", 500, { requestId });
   if (!data) return fail("conflict", "O lançamento mudou. Atualize a tela antes de confirmar.", 409, { requestId });
   const auditAction = action === "settle" ? "finance.entry_settled" : action === "cancel" ? "finance.entry_cancelled" : "finance.entry_reopened";

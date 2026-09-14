@@ -8,7 +8,8 @@ const base: LancamentoFinanceiro = {
   id: "00000000-0000-4000-8000-000000000001", direction: "receivable", status: "open",
   description: "Venda", amount_cents: 10_000, currency: "BRL", due_date: "2026-09-10",
   notes: null, source: "manual", settled_amount_cents: null, settled_at: null, revision: 1,
-  created_at: "2026-09-01T00:00:00Z",
+  created_at: "2026-09-01T00:00:00Z", category_id: null, cost_center_id: null,
+  account_id: null, chart_account_id: null, competence_date: null,
 };
 
 describe("resumirFinanceiro", () => {

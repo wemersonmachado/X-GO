@@ -76,6 +76,11 @@ interface Excecao {
  */
 const PROVA_PROPRIA: readonly Excecao[] = [
   { tabela: "finance_entries", razao: "tests/invariants/financeiro-rls.test.ts — dois tenants reais; manager da org A lê a própria linha e conta zero linhas da org B sob JWT authenticated; escrita direta negada" },
+  ...["finance_categories", "finance_cost_centers", "finance_accounts", "finance_agent_permissions",
+    "finance_proposals", "finance_documents", "finance_chart_accounts", "finance_import_batches",
+    "finance_import_movements", "finance_fiscal_requests"].map(tabela => ({
+      tabela, razao: "tests/invariants/financeiro-expansao-rls.test.ts — manager vê somente a organização ativa, viewer vê zero e escrita direta é negada",
+    })),
   { tabela: "channel_routing_policies", razao: "tests/invariants/channel-routing.test.ts — dois tenants reais, leitura positiva local e negativa cruzada por JWT; FK composta rejeita canal de outra org" },
   { tabela: "channel_routing_responsibles", razao: "tests/invariants/channel-routing.test.ts — JWT do tenant B não lê responsáveis de A; revogação remove vínculo e claim revalida membro ativo" },
   { tabela: "channel_connection_requests", razao: "tests/invariants/channel-routing.test.ts — recibo privado sem SELECT authenticated; reserva admin com MFA e finalização service-only cercada por org e lease" },

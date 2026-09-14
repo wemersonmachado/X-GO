@@ -9,6 +9,11 @@ export const criarLancamentoSchema = z.object({
   currency: z.literal("BRL").default("BRL"),
   due_date: z.iso.date(),
   notes: z.string().trim().max(1000).nullish(),
+  category_id: z.uuid().nullable().optional(),
+  cost_center_id: z.uuid().nullable().optional(),
+  account_id: z.uuid().nullable().optional(),
+  chart_account_id: z.uuid().nullable().optional(),
+  competence_date: z.iso.date().nullable().optional(),
 }).strict();
 
 export const alterarSituacaoSchema = z.object({

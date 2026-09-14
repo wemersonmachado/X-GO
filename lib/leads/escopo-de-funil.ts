@@ -131,6 +131,9 @@ export const ALVO_DE_FUNIL: Record<string, AlvoDeFunil> = {
   crm_create_webhook_source: "sem_funil",
   crm_set_webhook_source_active: "sem_funil",
   crm_set_automation_rule_active: "sem_funil",
+  // Proposta financeira não toca card. O escopo é a organização confiável do
+  // turno, mais a permissão financeira explícita do agente e seu limite.
+  crm_propose_financial_action: "sem_funil",
 };
 
 /**
