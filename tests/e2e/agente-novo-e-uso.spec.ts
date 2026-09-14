@@ -20,11 +20,21 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 import { loginComoAdmin, lerCreds, type CredsE2E } from "./helpers/login-admin";
 
 const EVIDENCIA = path.join(process.cwd(), "evidence", "ia-360-w1");
+
+async function preencherNomeNoRascunho(page: Page, nome: string) {
+  // A primeira pintura vem do servidor. Se o preenchimento ocorrer antes da
+  // hidratação, o React repõe o valor anterior e nenhum autosave é disparado.
+  // "Salvando" prova que o evento chegou ao formulário hidratado.
+  await expect(async () => {
+    await page.locator("#name").fill(nome);
+    await expect(page.getByText(/salvando rascunho/i).first()).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 15_000 });
+}
 
 let creds: CredsE2E = lerCreds();
 
@@ -63,9 +73,7 @@ test.describe("Criar um agente pela tela", () => {
     // O que a pessoa já digitou deixa de morar só no navegador. Depois do
     // indicador de salvamento, sair e reabrir /new recupera o mesmo registro.
     const nomeParcial = `Rascunho persistente ${Date.now()}`;
-    await page.locator("#name").fill(nomeParcial);
-    // O estado transitório pode acabar entre dois polls; o dado persistido é
-    // a pós-condição. Aguarde a resposta do autosave e prove reabertura abaixo.
+    await preencherNomeNoRascunho(page, nomeParcial);
     await expect(page.getByText(/rascunho salvo/i).first()).toBeVisible({ timeout: 15_000 });
     await expect(async () => {
       const response = await page.request.get("/api/v1/ai/agents");
@@ -90,7 +98,7 @@ test.describe("Criar um agente pela tela", () => {
     await page.goto("/app/ai/agents/new");
     const nome = `Recepção da Clínica ${Date.now()}`;
 
-    await page.locator("#name").fill(nome);
+    await preencherNomeNoRascunho(page, nome);
     await page
       .locator("textarea")
       .first()

@@ -295,3 +295,4 @@ To re-apply on a fresh Supabase project, replay the migrations in version order 
 | `20260911130000` | `0239_precos_modelos_adicionais` | Preço oficial de Mistral e Cloudflare Workers AI entra em `ai_models` e `ai_pricing`, impedindo custo zero por NULL na instalação fresca. |
 | `20260911140000` | `0240_perfil_externo_sem_canal` | Um perfil de agente externo MCP pode nascer como rascunho antes de a organização conectar um canal local. A publicação continua validando a sessão e não habilita execução nativa sem canal. |
 | `20260911150000` | `0241_backfill_perfis_externos_mcp` | Integrações MCP externas já salvas ganham perfil rascunho visível em Agentes, sem duplicar nem armazenar bearer no perfil. |
+| `20260912010000` | `0242_financeiro_base` | Contas a pagar/receber, baixa humana com revisão otimista, fluxo previsto/realizado e RLS por papel; não executa movimentação financeira. |

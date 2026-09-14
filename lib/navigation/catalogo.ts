@@ -205,6 +205,17 @@ export const NAV_CATALOG = [
     sidebar: true,
   },
   {
+    // Gestão financeira do NEGÓCIO, não cobrança da instalação. Só manager+
+    // enxerga valores; baixar/cancelar ainda exige admin na API.
+    href: "/app/financeiro",
+    label: "Financeiro",
+    description: "Contas a pagar e receber, vencimentos e fluxo de caixa do negócio.",
+    icon: "Receipt",
+    group: "crm",
+    section: "O dia a dia da venda",
+    minRole: "manager",
+  },
+  {
     // ⚠️ Esta tela nasceu porque a FERRAMENTA já existia sem ela. O agente de IA
     // vinha com "procurar produto na loja" ligada por padrão, lendo uma tabela
     // que ninguém nunca preencheu — e o efeito não era silêncio: era o agente

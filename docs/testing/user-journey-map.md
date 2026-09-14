@@ -1979,6 +1979,13 @@ Browser r3 passou **2 jornadas/30,0s**, appprodução3013, sessão e PostgREST r
 
 Testes: `tests/e2e/agenda-google-meet.spec.ts`, `tests/invariants/agenda-meet.test.ts`, `tests/invariants/agenda-meet-export.test.ts`, `tests/unit/agenda-meet*.test.ts*` e `tests/unit/lgpd-pdf-meet.test.ts`. Unit integral710arquivos/7671PASS+1expectedfail; DB integral171arquivos/1386PASS+1expectedfail+1skip, INSTALL/UPDATE PG15. Após o reparo runtime,75casos focados/type/lint e novo build/browser passaram; sem repetição do DB sem delta SQL.0226 aplicada/imutável no QA, junto com0224/0225. Limpeza0organizações/0usuários meet-ui, app/receivers/pools encerrados e namespace demo preservado. Histórico e limites completos em `.superpowers/sdd/comunidade-360/task-8-report.md`.
 
+### Financeiro empresarial — fase 1
+
+- [P0] Manager abre **Financeiro**, registra conta a pagar/receber e a vê no fluxo previsto; viewer/agent não alcança a tela nem os dados.
+- [P0] Admin confirma a baixa após diálogo explícito; a linha aparece em Baixados, alimenta o realizado e deixa Audit Log. Manager não confirma.
+- [P1] Dois administradores com a mesma revisão: só a primeira transição é aceita; a segunda atualiza a tela antes de decidir novamente.
+- [P1] Cancelar preserva a linha e permite reabrir; não existe exclusão nem integração que movimente dinheiro nesta fase.
+
 ### Criação persistente e conexão de agentes
 
 - [P0] `tests/e2e/agente-novo-e-uso.spec.ts`: abrir Novo agente, preencher parte do

@@ -16,6 +16,7 @@ ser fonte sem ninguém decidir isso.
 
 | arquivo | escopo |
 |---|---|
+| `financeiro.architecture.json` | contas a pagar/receber, projeção, isolamento e confirmação humana; não movimenta dinheiro |
 | `criacao-e-conexao-de-agentes.architecture.json` | rascunho persistente da criação, guia de conclusão, registro de provedores e porta segura para agentes externos pelo MCP da organização |
 | `pagamento-e-acesso.architecture.json` | confirmação financeira do Asaas, provisionamento idempotente, entrega pelo Resend e primeiro acesso com senha criada pelo titular |
 | `pre-go-live-whatsapp.architecture.json` | modo de teste por canal (issue #573): configuração administrativa, gate compartilhado, releitura no envio e validação pelo Inbox |
