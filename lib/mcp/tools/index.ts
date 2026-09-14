@@ -44,6 +44,7 @@ import {
   crmResumeAiAttendance,
 } from "./escalacao";
 import { crmRequestHumanHandoff } from "./handoff";
+import { crmProposeFinancialAction } from "./financeiro";
 import {
   crmSearchKnowledge,
   crmListKnowledgeSources,
@@ -96,6 +97,7 @@ import {
 // unknown>` e cada handler valida no Zod do registerTool.
 export const allTools: ReadonlyArray<McpToolDefinition> = [
   crmGetAgentConfiguration,
+  crmProposeFinancialAction,
   // read
   crmListEventTypes,
   crmFindFreeSlots,

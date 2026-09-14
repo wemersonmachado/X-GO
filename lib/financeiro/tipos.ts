@@ -18,4 +18,9 @@ export interface LancamentoFinanceiro {
   settled_at: string | null;
   revision: number;
   created_at: string;
+  category_id: string | null;
+  cost_center_id: string | null;
+  account_id: string | null;
+  chart_account_id: string | null;
+  competence_date: string | null;
 }
