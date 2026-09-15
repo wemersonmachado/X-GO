@@ -48,7 +48,13 @@ export async function POST(request: Request): Promise<Response> {
   if (!verifyStripeSignature(rawBody, request.headers.get("stripe-signature"), env.STRIPE_WEBHOOK_SECRET)) {
     return fail("unauthorized", "Webhook não autorizado.", 401);
   }
-  const parsed = eventSchema.safeParse(JSON.parse(rawBody));
+  let json: unknown;
+  try {
+    json = JSON.parse(rawBody);
+  } catch {
+    return fail("validation_failed", "JSON inválido.", 400);
+  }
+  const parsed = eventSchema.safeParse(json);
   if (!parsed.success) return fail("validation_failed", "Evento inválido.", 422);
   const event = parsed.data;
   const object = event.data.object as Record<string, unknown>;
