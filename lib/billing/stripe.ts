@@ -74,9 +74,18 @@ export async function createCheckoutSession(input: {
     // Sem isto, a Stripe tenta detectar métodos automaticamente a partir do
     // dashboard da conta — e uma conta nova, sem nada ativado pra BRL, rejeita
     // a sessão inteira com 400 ("No valid payment method types"). `card`
-    // funciona em qualquer conta Stripe sem ativação prévia; boleto/Pix exigem
-    // habilitar em Settings › Payment methods antes de entrar aqui.
-    payment_method_types: ["card"],
+    // funciona em qualquer conta Stripe sem ativação prévia; boleto foi
+    // habilitado em Settings › Payment methods em 2026-09-15. Pix segue de
+    // fora — conta BR só ganha acesso por convite da Stripe.
+    //
+    // Boleto é ASSÍNCRONO: `checkout.session.completed` dispara na hora em
+    // que o cliente GERA o boleto, não quando ele PAGA — `payment_status`
+    // vem "unpaid" nesse momento. A confirmação de dinheiro de verdade chega
+    // depois, em `checkout.session.async_payment_succeeded` (dias depois,
+    // fora do processo de checkout). O webhook (route.ts) trata os dois
+    // eventos e só provisiona quando `payment_status === "paid"` — sem essa
+    // checagem, gerar um boleto e nunca pagar liberaria acesso na hora.
+    payment_method_types: ["card", "boleto"],
     success_url: input.successUrl,
     cancel_url: input.cancelUrl,
     client_reference_id: input.clientReferenceId,

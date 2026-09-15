@@ -20,15 +20,29 @@ const eventSchema = z
   .passthrough();
 
 /**
- * Só `checkout.session.completed` provisiona acesso — mesmo escopo que o
- * webhook Asaas do X-GO já tinha (só PAYMENT_CONFIRMED/RECEIVED agiam).
+ * `checkout.session.completed` e `checkout.session.async_payment_succeeded`
+ * provisionam acesso — mesmo escopo que o webhook Asaas do X-GO já tinha (só
+ * pagamento confirmado agia), mas agora com DOIS eventos porque boleto é
+ * ASSÍNCRONO: `checkout.session.completed` dispara quando o cliente GERA o
+ * boleto (payment_status "unpaid"), não quando paga. A confirmação de
+ * dinheiro de verdade chega dias depois em `async_payment_succeeded` — por
+ * isso o gate abaixo checa `payment_status === "paid"` em vez de confiar no
+ * tipo do evento sozinho. Sem essa checagem, gerar um boleto e nunca pagar
+ * liberaria acesso na hora (cartão sempre chega com "paid" já em
+ * `checkout.session.completed`, então não muda nada pra esse caminho).
+ *
  * Os demais eventos registrados no endpoint (`invoice.paid`,
  * `invoice.payment_failed`, `customer.subscription.*`, `charge.refunded`,
- * `charge.dispute.created`) só são AUDITADOS aqui: nada hoje em
- * `organization_subscriptions` é lido pra bloquear acesso por vencimento ou
- * chargeback, então mutar status por esses eventos seria estado que ninguém
- * consome — quando essa checagem existir, evolui este handler junto.
+ * `charge.dispute.created`, `checkout.session.async_payment_failed`) só são
+ * AUDITADOS aqui: nada hoje em `organization_subscriptions` é lido pra
+ * bloquear acesso por vencimento ou chargeback, então mutar status por esses
+ * eventos seria estado que ninguém consome — quando essa checagem existir,
+ * evolui este handler junto.
  */
+const PROVISION_EVENTS = new Set([
+  "checkout.session.completed",
+  "checkout.session.async_payment_succeeded",
+]);
 export async function POST(request: Request): Promise<Response> {
   const rawBody = await request.text();
   if (!verifyStripeSignature(rawBody, request.headers.get("stripe-signature"), env.STRIPE_WEBHOOK_SECRET)) {
@@ -69,11 +83,19 @@ export async function POST(request: Request): Promise<Response> {
   if (recordError) return fail("internal_error", "Evento não processado.", 500);
   if (!recorded) return ok({ received: true, duplicate: true });
 
-  if (event.type !== "checkout.session.completed") {
+  if (!PROVISION_EVENTS.has(event.type)) {
     return ok({ received: true, access_provisioned: false, ignored: event.type });
   }
 
   const session = object;
+  const paymentStatus = typeof session.payment_status === "string" ? session.payment_status : null;
+  if (paymentStatus !== "paid") {
+    // Boleto gerado (checkout.session.completed) mas ainda não pago — a
+    // confirmação vem depois em async_payment_succeeded. Não é erro, não
+    // audita como falha: só ainda não há dinheiro confirmado pra provisionar.
+    return ok({ received: true, access_provisioned: false, payment_status: paymentStatus });
+  }
+
   const customerId = typeof session.customer === "string" ? session.customer : null;
   const subscriptionId = typeof session.subscription === "string" ? session.subscription : null;
   const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : null;
@@ -86,7 +108,7 @@ export async function POST(request: Request): Promise<Response> {
     "Cliente";
 
   if (!planSlugFromMetadata || !customerId || amountTotal == null || !email) {
-    logger.error("[billing.stripe] checkout.session.completed sem dado obrigatório", {
+    logger.error(`[billing.stripe] ${event.type} pago sem dado obrigatório`, {
       hasPlan: Boolean(planSlugFromMetadata),
       hasCustomer: Boolean(customerId),
       hasAmount: amountTotal != null,
