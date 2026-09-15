@@ -33,8 +33,8 @@ no momento da aplicação, sem backfill necessário):
 - `app/checkout/[slug]/route.ts` — cria a Checkout Session com `price_data` inline, lido de
   `platform_billing_plans` na hora do clique. Rate-limit por IP (rota pública).
 
-**Removido** (Asaas do X-GO, cutover completo): `lib/billing/asaas.ts`,
-`app/api/v1/webhooks/asaas/route.ts`, `docs/runbooks/asaas.md` (substituído por
+**Removido** (Asaas do X-GO, cutover completo): lib/billing/asaas.ts,
+app/api/v1/webhooks/asaas/route.ts, docs/runbooks/asaas.md (substituído por
 `docs/runbooks/stripe.md`), e todo o prep de subconta Asaas exclusiva feito mais cedo hoje
 (script, migration-rascunho, seção de runbook) — ficou obsoleto: trocar de provedor resolve
 o isolamento por construção, sem depender de configuração de conta.

@@ -4,9 +4,9 @@
 
 `LandingPage.tsx` e `landing.module.css`: página renderizada no servidor, cards e cena 3D em CSS, FAQ nativa e movimento reduzido. Não utiliza bibliotecas de animação, imagens remotas nem rastreadores adicionais.
 
-`schema.ts`: conteúdo padrão e validação; três planos mensais com preço em centavos e checkout próprio. `server.ts`: leitura pública com fallback. `SettingsForm.tsx` e `actions.ts`: editor protegido por superadmin, escopo completo e MFA da sessão. Ao publicar, os valores são sincronizados com o Asaas antes de atualizar `platform_branding.landing_page`.
+`schema.ts`: conteúdo padrão e validação; três planos mensais com preço em centavos e checkout próprio. `server.ts`: leitura pública com fallback. `SettingsForm.tsx` e `actions.ts`: editor protegido por superadmin, escopo completo e MFA da sessão. Ao publicar, só grava em `platform_billing_plans` — checkout é dinâmico (Stripe Checkout Session criada na hora do clique), então não há nenhum provedor externo pra sincronizar.
 
-Credenciais nunca ficam nesta pasta nem no JSON público. O estado operacional dos links vive em `platform_billing_plans`; eventos idempotentes e minimizados em `platform_payment_events`. Operação: `docs/runbooks/asaas.md`.
+Credenciais nunca ficam nesta pasta nem no JSON público. O preço vivo do plano fica em `platform_billing_plans`; eventos idempotentes e minimizados em `platform_payment_events`. Operação: `docs/runbooks/stripe.md`.
 
 As únicas pontes fora desta pasta são as rotas `/` e `/app/settings/landing-page`, a navegação e a migration `0236`. Hospedagem: mesmo serviço Railway da aplicação, mesmo domínio e certificado. Não há segundo build ou infraestrutura para manter.
 

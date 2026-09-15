@@ -72,6 +72,6 @@ X-GO usava Asaas (mesma conta do Paint Inspector Pro) até 2026-09-15. Substitu�
 do dono do produto após uma auditoria encontrar que a conta compartilhada expunha o Paint
 Inspector Pro a eventos de pagamento do X-GO. Em vez de separar em subconta Asaas (opção
 avaliada e descartada), o X-GO trocou de provedor inteiramente — o que resolve o isolamento
-por construção, sem depender de configuração de conta. Código antigo (`lib/billing/asaas.ts`,
-`app/api/v1/webhooks/asaas/route.ts`) foi removido; ver `git log` deste arquivo pra contexto
-completo se precisar do runbook Asaas original.
+por construção, sem depender de configuração de conta. O cliente Asaas e o webhook antigos do
+X-GO foram removidos neste mesmo commit; use `git log --diff-filter=D -- '*asaas*'` pra achar
+os caminhos exatos e o conteúdo original se precisar do runbook Asaas de referência.

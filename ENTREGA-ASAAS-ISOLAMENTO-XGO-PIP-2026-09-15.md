@@ -10,7 +10,7 @@ repositório separado), que hoje dividem a mesma conta Asaas.
 
 - Um único webhook cadastrado na conta Asaas, apontando para a função
   Supabase do Paint Inspector Pro.
-- Webhook do X-GO (`app/api/v1/webhooks/asaas/route.ts`, publicado em
+- Webhook do X-GO (app/api/v1/webhooks/asaas/route.ts, publicado em
   `https://xgoos.com.br/api/v1/webhooks/asaas`) existe em código e está
   deployado, mas **não está cadastrado como destino na Asaas**.
 - Os 3 links do X-GO (Standard/Pro/Enterprise) foram criados na mesma conta
@@ -35,17 +35,19 @@ Inspector Pro para quem só pagou X-GO. Corrigido nos commits `43af1df` e
 `bc1aeda` do repositório do Paint Inspector Pro — detalhe completo em
 `AUDITORIA-ASAAS-ISOLAMENTO-XGO-2026-09-15.md` naquele repo.
 
-## Preparado neste repositório (X-GO)
+## Preparado neste repositório (X-GO) — SUPERSEDIDO em 15/09/2026
 
-- `docs/runbooks/asaas.md` — seção nova "Migração para subconta Asaas
-  exclusiva (X-GO)", passo a passo completo.
-- `scripts/migrar-asaas-xgo-subconta.ts` — cadastra webhook + recria os 3
-  links na conta nova assim que a chave existir (dry-run validado, não
-  executado contra Asaas real).
-- `supabase/migrations/20260915100000_0245_platform_billing_plans_asaas_subconta_xgo.sql`
-  — rascunho com placeholders e guarda contra aplicação acidental.
-- `docs/architecture/pagamento-e-acesso.architecture.json` — nó
-  `asaas_subconta_xgo` (pendente).
+Esta seção descreve o que foi feito nesta sessão especificamente: runbook de
+migração pra subconta Asaas exclusiva, script de sincronização e uma
+migration-rascunho. **Nenhum desses artefatos sobreviveu ao fim do dia** — o
+dono do produto decidiu trocar de provedor inteiramente (ver
+`ENTREGA-STRIPE-X-GO-2026-09-15.md`), o que resolveu o isolamento sem precisar
+de subconta. O runbook virou docs/runbooks/stripe.md, o script e a migration
+foram apagados. Ficam citados aqui sem crase (não são mais caminhos válidos)
+só pra registro histórico de que existiram: docs/runbooks/asaas.md,
+scripts/migrar-asaas-xgo-subconta.ts,
+supabase/migrations/20260915100000_0245_platform_billing_plans_asaas_subconta_xgo.sql.
+O nó `asaas_subconta_xgo` também foi removido do mapa de arquitetura.
 
 ## Pendente (fora do alcance desta sessão)
 
