@@ -85,11 +85,27 @@ o isolamento por construção, sem depender de configuração de conta.
   ter as chaves Stripe (sem o override de URL). Contagem final bateu exatamente com a de
   antes de qualquer teste (`subs:0 events:0 orgs:3 access:0`).
 
-## Pendente
+## Fechamento (mesmo dia, sessão seguinte)
 
-- **Boleto**: precisa ser habilitado em Settings › Payment methods na conta Stripe antes
-  de entrar em `payment_method_types`.
-- **Pix**: só por convite pra conta brasileira — decisão do usuário foi seguir sem ele por
-  enquanto.
-- **Deploy em produção**: `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` (live) precisam ser
-  cadastrados nas variáveis do Railway antes do próximo deploy alcançar `xgoos.com.br`.
+- **Boleto habilitado e implementado.** Usuário ativou em Settings › Payment methods; código
+  ganhou `payment_method_types: ["card", "boleto"]` **com a correção necessária**: boleto é
+  assíncrono (`checkout.session.completed` dispara ao GERAR o boleto, não ao pagar) — o
+  webhook só provisiona quando `payment_status === "paid"`, tratando também
+  `checkout.session.async_payment_succeeded`/`failed` (endpoint da Stripe atualizado com os
+  2 eventos novos). Testado: boleto "unpaid" não provisiona; confirmação assíncrona
+  provisiona certo (organização + assinatura criadas, testado e limpo).
+- **Auditoria final antes do merge** achou e corrigiu: `API GITHUB-NÃO APAGAR.txt` fora do
+  `.gitignore` (nunca vazou, corrigido); `JSON.parse` sem try/catch no webhook; 4 documentos
+  citando em crase paths que a própria migração apagou (o CI's `verify` reprovou por isso —
+  `tests/unit/documentacao-aponta-para-o-que-existe.test.ts` — corrigido e reenviado).
+- **PR #13 aberto, CI 100% verde** (verify, invariants, e2e×3, build-and-size, imagens-ok —
+  único vermelho é `cortar-tag`, pré-existente neste fork por falta de secret de GitHub App,
+  não relacionado a este trabalho) e **mesclado em `main`** (`1e9b12b5`).
+- **Pix** segue de fora — só por convite pra conta brasileira, decisão do usuário.
+- **Deploy em produção confirmado**: `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` cadastrados
+  nas variáveis do Railway (serviço `app`) via API GraphQL. Achado operacional: **o serviço
+  não redeploya sozinho ao mergear no GitHub** (sem webhook de auto-deploy configurado) — foi
+  preciso disparar `serviceInstanceDeployV2` manualmente depois que a imagem nova terminou de
+  buildar no GHCR. Verificado ao vivo: `https://xgoos.com.br/checkout/standard` redireciona
+  pra uma Checkout Session real da Stripe com o preço do banco (sessão de verificação
+  expirada logo em seguida, nenhuma cobrança).
