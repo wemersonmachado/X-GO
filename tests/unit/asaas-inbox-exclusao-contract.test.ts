@@ -11,15 +11,18 @@ describe("contrato de cobrança e exclusões", () => {
     expect(DEFAULT_LANDING.plans.every((plan) => Number.isInteger(plan.price_cents) && plan.price_cents > 0)).toBe(true);
   });
 
-  it("protege webhook, idempotência e privilégios das tabelas financeiras", () => {
-    const route = readFileSync("app/api/v1/webhooks/asaas/route.ts", "utf8");
+  it("protege webhook Stripe, idempotência e privilégios das tabelas financeiras", () => {
+    const route = readFileSync("app/api/v1/webhooks/stripe/route.ts", "utf8");
+    const client = readFileSync("lib/billing/stripe.ts", "utf8");
     const migration = readFileSync("supabase/migrations/20260910230000_0237_billing_asaas_e_exclusoes_definitivas.sql", "utf8");
-    expect(route).toContain("timingSafeEqual");
-    expect(route).toContain("asaas-access-token");
+    const migrationStripe = readFileSync("supabase/migrations/20260915140000_0245_billing_stripe_x_go.sql", "utf8");
+    expect(client).toContain("timingSafeEqual");
+    expect(route).toContain("stripe-signature");
     expect(route).not.toContain("cpf");
     expect(migration).toContain("event_id text primary key");
     expect(migration).toMatch(/revoke all on public\.platform_billing_plans[\s\S]+from public, anon, authenticated/);
-    expect(migration).toContain("grant execute on function public.fn_record_asaas_event");
+    expect(migrationStripe).toContain("grant execute on function public.fn_record_stripe_event");
+    expect(migrationStripe).toContain("grant execute on function public.fn_provision_paid_checkout");
   });
 
   it("exclusão definitiva é atômica e não deixa o agente na lista de arquivados", () => {

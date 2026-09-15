@@ -26,6 +26,17 @@ build/
 # gitignore não as interpreta como delimitador, e viraria parte do padrão.
 API GITHUB.txt
 
+# Mesma classe de risco, arquivo renomeado (2026-09-15): o nome mudou pra
+# "NÃO APAGAR" mas ninguém atualizou esta lista, e por isso ficou destravado
+# pra um `git add -A` por 7 dias. Valor idêntico ao GITHUB_PAT do .env —
+# redundante, mas o nome pede pra não apagar, só proteger.
+API GITHUB-NÃO APAGAR.txt
+
+# Pasta de credenciais em texto puro (Supabase, Resend, Cloudflare, Asaas,
+# Railway) — não tem gitignore próprio consistente com o nome real da pasta
+# em todo lugar; reforçando aqui pra não depender só da entrada de 07/09.
+CREDENCIAIS-NÃO APAGAR/
+
 # Testing & coverage
 coverage/
 .nyc_output/

@@ -51,6 +51,15 @@ export const PUBLIC_PATHS: RegExp[] = [
   /^\/manifest\.webmanifest$/,
   /^\/team\/accept-invite\/.+$/,
   /^\/account-suspended$/,
+  // Início do checkout dinâmico (Stripe) e página de retorno. Quem clica em
+  // "Contratar" na landing NUNCA tem sessão ainda — client_reference_id vai
+  // "guest" nesse caso (ver app/checkout/[slug]/route.ts) — e quem volta do
+  // pagamento também não, porque a conta só é criada pelo webhook depois da
+  // confirmação. Sem esta entrada, as duas paradas do fluxo de guest caem no
+  // /login e o convite por e-mail — que ainda nem chegou — vira a única saída.
+  // Ancorado nos três slugs válidos de propósito, mesmo motivo do /legal/
+  // acima: `/^\/checkout\// deixaria qualquer sub-path futuro nascer público.
+  /^\/checkout\/(standard|pro|enterprise|sucesso)$/,
   // Documentos legais. O checkbox obrigatório de `/onboarding/welcome` linka os
   // dois, e o aceite acontece antes de a pessoa ter qualquer coisa no sistema —
   // exigir sessão para LER o que se está aceitando inverte a ordem. Âncorado nos
