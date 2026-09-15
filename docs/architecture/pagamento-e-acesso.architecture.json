@@ -15,6 +15,7 @@
   "mainPath": ["landing", "asaas", "webhook", "provisionar", "resend", "senha", "app"],
   "nodes": [
     { "id": "landing", "lane": "pessoa", "col": 0, "type": "ui", "label": "Landing › Contratar plano", "sublabel": "link e valor publicados pelo painel" },
+    { "id": "asaas_subconta_xgo", "lane": "integracoes", "col": 0, "type": "external", "label": "Conta Asaas exclusiva do X-GO", "sublabel": "PENDENTE — hoje compartilhada com Paint Inspector Pro; dono cria no painel (docs/runbooks/asaas.md)" },
     { "id": "asaas", "lane": "integracoes", "col": 1, "type": "external", "label": "Checkout Asaas", "sublabel": "cobrança recorrente; callback só orienta o navegador" },
     { "id": "webhook", "lane": "app", "col": 2, "type": "service", "label": "POST /api/v1/webhooks/asaas", "sublabel": "token em tempo constante, Zod e evento minimizado" },
     { "id": "plano", "lane": "integracoes", "col": 3, "type": "database", "label": "platform_billing_plans", "sublabel": "link ativo e valor em centavos são a fonte de verdade" },
@@ -36,6 +37,7 @@
     { "from": "senha", "to": "app", "label": "cria senha e aceita" },
     { "from": "provisionar", "to": "audit", "label": "registra criação" },
     { "from": "senha", "to": "audit", "label": "registra aceite" },
-    { "from": "audit", "to": "webhook", "label": "falha gera retentativa observável" }
+    { "from": "audit", "to": "webhook", "label": "falha gera retentativa observável" },
+    { "from": "asaas_subconta_xgo", "to": "asaas", "label": "migração planejada: encerra o compartilhamento de conta entre produtos" }
   ]
 }
