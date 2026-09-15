@@ -12,13 +12,12 @@
     { "id": "app", "label": "Aplicativo" },
     { "id": "integracoes", "label": "Dados e integrações" }
   ],
-  "mainPath": ["landing", "asaas", "webhook", "provisionar", "resend", "senha", "app"],
+  "mainPath": ["landing", "stripe", "webhook", "provisionar", "resend", "senha", "app"],
   "nodes": [
-    { "id": "landing", "lane": "pessoa", "col": 0, "type": "ui", "label": "Landing › Contratar plano", "sublabel": "link e valor publicados pelo painel" },
-    { "id": "asaas_subconta_xgo", "lane": "integracoes", "col": 0, "type": "external", "label": "Conta Asaas exclusiva do X-GO", "sublabel": "PENDENTE — hoje compartilhada com Paint Inspector Pro; dono cria no painel (docs/runbooks/asaas.md)" },
-    { "id": "asaas", "lane": "integracoes", "col": 1, "type": "external", "label": "Checkout Asaas", "sublabel": "cobrança recorrente; callback só orienta o navegador" },
-    { "id": "webhook", "lane": "app", "col": 2, "type": "service", "label": "POST /api/v1/webhooks/asaas", "sublabel": "token em tempo constante, Zod e evento minimizado" },
-    { "id": "plano", "lane": "integracoes", "col": 3, "type": "database", "label": "platform_billing_plans", "sublabel": "link ativo e valor em centavos são a fonte de verdade" },
+    { "id": "landing", "lane": "pessoa", "col": 0, "type": "ui", "label": "Landing › Contratar plano", "sublabel": "preço publicado pelo painel; sem link fixo" },
+    { "id": "stripe", "lane": "integracoes", "col": 1, "type": "external", "label": "Checkout Stripe", "sublabel": "Checkout Session dinâmica (price_data inline), conta exclusiva do X-GO" },
+    { "id": "webhook", "lane": "app", "col": 2, "type": "service", "label": "POST /api/v1/webhooks/stripe", "sublabel": "assinatura HMAC em tempo constante, tolerância de replay, evento minimizado" },
+    { "id": "plano", "lane": "integracoes", "col": 3, "type": "database", "label": "platform_billing_plans", "sublabel": "price_cents é a fonte de verdade, lido a cada Checkout Session criada" },
     { "id": "provisionar", "lane": "app", "col": 4, "type": "service", "label": "fn_provision_paid_checkout", "sublabel": "lock, conciliação exata e tenant único por compra" },
     { "id": "recibo", "lane": "integracoes", "col": 5, "type": "database", "label": "platform_checkout_access", "sublabel": "recibo e hash do e-mail; sem PII aberta" },
     { "id": "resend", "lane": "integracoes", "col": 6, "type": "external", "label": "Resend", "sublabel": "convite com chave de idempotência" },
@@ -27,9 +26,9 @@
     { "id": "audit", "lane": "app", "col": 5, "type": "service", "label": "Audit log", "sublabel": "tenant criado, convite emitido e aceite" }
   ],
   "edges": [
-    { "from": "landing", "to": "asaas", "label": "abre checkout" },
-    { "from": "asaas", "to": "webhook", "label": "confirma pagamento" },
-    { "from": "webhook", "to": "plano", "label": "confere link e valor" },
+    { "from": "landing", "to": "stripe", "label": "abre checkout" },
+    { "from": "stripe", "to": "webhook", "label": "checkout.session.completed" },
+    { "from": "webhook", "to": "plano", "label": "confere plan_slug (metadata) e valor" },
     { "from": "plano", "to": "provisionar", "label": "elegível" },
     { "from": "provisionar", "to": "recibo", "label": "persiste antes do e-mail" },
     { "from": "recibo", "to": "resend", "label": "envia ou retenta" },
@@ -37,7 +36,6 @@
     { "from": "senha", "to": "app", "label": "cria senha e aceita" },
     { "from": "provisionar", "to": "audit", "label": "registra criação" },
     { "from": "senha", "to": "audit", "label": "registra aceite" },
-    { "from": "audit", "to": "webhook", "label": "falha gera retentativa observável" },
-    { "from": "asaas_subconta_xgo", "to": "asaas", "label": "migração planejada: encerra o compartilhamento de conta entre produtos" }
+    { "from": "audit", "to": "webhook", "label": "falha gera retentativa observável" }
   ]
 }

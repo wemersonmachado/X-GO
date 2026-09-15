@@ -249,6 +249,12 @@ const schema = z.object({
   ASAAS_API_BASE_URL: z.string().url().optional().default("https://api.asaas.com/v3"),
   ASAAS_WEBHOOK_TOKEN: z.string().optional().default(""),
 
+  // Stripe (X-GO) — checkout dinâmico, sem link fixo: preço vem de
+  // platform_billing_plans a cada Checkout Session criada.
+  STRIPE_SECRET_KEY: z.string().optional().default(""),
+  STRIPE_WEBHOOK_SECRET: z.string().optional().default(""),
+  STRIPE_API_BASE_URL: z.string().url().optional().default("https://api.stripe.com/v1"),
+
   /**
    * E-mail de suporte que a instalação mostra ao CLIENTE FINAL (tela de conta
    * suspensa, tela de cobrança).

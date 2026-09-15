@@ -48,4 +48,23 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/legal/terms/interno")).toBe(false);
     expect(isPublicPath("/legal/qualquer-outra")).toBe(false);
   });
+
+  /**
+   * Quem clica em "Contratar" na landing e quem volta do pagamento NUNCA têm
+   * sessão — a conta só nasce depois que o webhook confirma. Sem isso, os dois
+   * caem no /login e o convite (que ainda nem chegou) vira a única saída.
+   */
+  it("libera o início do checkout dinâmico pros três planos e a página de retorno", () => {
+    expect(isPublicPath("/checkout/standard")).toBe(true);
+    expect(isPublicPath("/checkout/pro")).toBe(true);
+    expect(isPublicPath("/checkout/enterprise")).toBe(true);
+    expect(isPublicPath("/checkout/sucesso")).toBe(true);
+  });
+
+  it("e só esses quatro: /checkout não é um portão aberto", () => {
+    expect(isPublicPath("/checkout")).toBe(false);
+    expect(isPublicPath("/checkout/")).toBe(false);
+    expect(isPublicPath("/checkout/qualquer-outro")).toBe(false);
+    expect(isPublicPath("/checkout/standard/extra")).toBe(false);
+  });
 });

@@ -40,9 +40,9 @@ describe("pagamento confirmado e conexão externa", () => {
   });
 
   it("webhook só libera em confirmação financeira e exige dados reconciliáveis", () => {
-    const route = readFileSync("app/api/v1/webhooks/asaas/route.ts", "utf8");
-    expect(route).toContain('"PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"');
-    expect(route).toContain("getAsaasCustomerForAccess");
+    const route = readFileSync("app/api/v1/webhooks/stripe/route.ts", "utf8");
+    expect(route).toContain('"checkout.session.completed"');
+    expect(route).toContain("verifyStripeSignature");
     expect(route).toContain("fn_provision_paid_checkout");
     expect(route).toContain("sendPaidAccess");
   });
