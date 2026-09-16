@@ -488,6 +488,7 @@ export const AUDIT_ACTIONS = [
   "finance.entry_classified",
   "finance.fiscal_requested",
   "finance.fiscal_submitted",
+  "billing.subscription_synced",
   "organization.switched",
 ] as const;
 

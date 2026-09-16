@@ -7,7 +7,12 @@ import { describe, expect, it } from "vitest";
 
 import { motivoDoErro, sql } from "./psql-transporte";
 
-const TABELAS = ["organization_subscriptions", "platform_checkout_access"] as const;
+const TABELAS = [
+  "organization_subscriptions",
+  "platform_checkout_access",
+  "platform_checkout_intents",
+  "platform_subscription_payments",
+] as const;
 
 function privileges(role: string, table: string): string {
   return sql(`

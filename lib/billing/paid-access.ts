@@ -70,7 +70,7 @@ export async function sendPaidAccess(input: {
     bypassedRls: true,
     metadata: { role: "admin", source: "confirmed_payment", email_dispatched: true },
   });
-  // O marcador só avança depois do audit. Se o audit falhar, o Asaas retenta;
+  // O marcador só avança depois do audit. Se o audit falhar, a Stripe retenta;
   // a mesma chave idempotente impede uma segunda mensagem no Resend.
   const { error: receiptError } = await createAdminClient()
     .from("platform_checkout_access" as never)

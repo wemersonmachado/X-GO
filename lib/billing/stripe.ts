@@ -54,6 +54,18 @@ export interface StripeCheckoutSession {
   url: string | null;
 }
 
+export interface StripeChargeReference {
+  id: string;
+  customer: string | { id?: string } | null;
+  payment_intent: string | { id?: string } | null;
+}
+
+export async function retrieveStripeCharge(chargeId: string): Promise<StripeChargeReference> {
+  return stripeApi<StripeChargeReference>(`/charges/${encodeURIComponent(chargeId)}`, {
+    method: "GET",
+  });
+}
+
 /** Preço vem SEMPRE do chamador (lido do banco na hora do clique) — nunca de
  * um Price/Product pré-criado na Stripe. Isso é o que torna o link dinâmico:
  * o super admin muda `price_cents` e o próximo checkout já cobra o valor
@@ -68,6 +80,7 @@ export async function createCheckoutSession(input: {
   metadata: Record<string, string>;
   successUrl: string;
   cancelUrl: string;
+  idempotencyKey: string;
 }): Promise<StripeCheckoutSession> {
   const body = toStripeForm({
     mode: "subscription",
@@ -104,7 +117,11 @@ export async function createCheckoutSession(input: {
       },
     ],
   });
-  return stripeApi<StripeCheckoutSession>("/checkout/sessions", { method: "POST", body });
+  return stripeApi<StripeCheckoutSession>("/checkout/sessions", {
+    method: "POST",
+    body,
+    headers: { "idempotency-key": input.idempotencyKey },
+  });
 }
 
 /** Limpeza de sessão de teste: encerra sem esperar expirar sozinha (24h). */
