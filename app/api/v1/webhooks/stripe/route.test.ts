@@ -89,7 +89,7 @@ describe("webhook Stripe durável", () => {
   it("marca falha e devolve 503 para a Stripe retentar quando a entrega falha", async () => {
     mocks.rpc.mockImplementation(async (name: string, args: { p_succeeded?: boolean }) => {
       if (name === "fn_claim_stripe_event") return { data: { claimed: true, state: "processing", attempt: 1 }, error: null };
-      if (name === "fn_provision_paid_checkout") return { data: receipt, error: null };
+      if (name === "fn_apply_paid_stripe_plan_bundle") return { data: receipt, error: null };
       if (name === "fn_finish_stripe_event") return { data: true, error: null, succeeded: args.p_succeeded };
       throw new Error(`RPC inesperada: ${name}`);
     });

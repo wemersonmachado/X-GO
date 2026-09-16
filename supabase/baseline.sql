@@ -19153,6 +19153,12 @@ revoke execute on function public.fn_demanda_encerrar(uuid,uuid,bigint,text,uuid
 grant execute on function public.fn_demanda_encerrar(uuid,uuid,bigint,text,uuid) to service_role;
 notify pgrst,'reload schema';
 
+-- 0248 — mantém instalação fresca na mesma cadeia idempotente das migrations.
+-- `baseline.sql` é executado por psql no instalador/update.sh; `\ir` conserva
+-- uma única fonte para a função de provisão financeira, evitando deriva entre
+-- o baseline e a migration versionada.
+\ir migrations/20260916220000_0248_planos_cesta_stripe_e_uso_ia.sql
+
 -- Só origem demonstrável. Cron legado/job antigo fica sem provenance e o
 -- consumidor o encerra stale; nunca carimbar no claim com a conversa de agora.
 create or replace function public.fn_job_service_boundary()

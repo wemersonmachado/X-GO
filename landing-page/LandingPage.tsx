@@ -5,7 +5,7 @@ import { melhorFrenteSobre } from "@/lib/branding/contraste";
 import { marcaDaSaida } from "@/lib/branding/saida";
 
 import styles from "./landing.module.css";
-import { PlanCta } from "./PlanCta";
+import { PlanConfigurator } from "./PlanConfigurator";
 import { readLanding } from "./server";
 
 const CAPABILITY_ICONS = ["↗", "✳", "◇", "◎", "⌘", "◈"];
@@ -175,17 +175,15 @@ export async function LandingPage() {
               {index === 1 && <span className={styles.popular}>MAIS ESCOLHIDO</span>}
               <p className={styles.planLabel}>{index === 1 ? "MAIS POSSIBILIDADES" : "SEU PRÓXIMO PASSO"}</p>
               <h3>{plan.name}</h3><p>{plan.description}</p>
-              <strong className={styles.price}>{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(plan.price_cents / 100)}<small>/mês</small></strong>
-              <small>Cobrança mensal recorrente</small>
-              <p className={styles.priceNote}>{plan.limits.users} usuários · {plan.limits.whatsapp} WhatsApps · {plan.limits.active_agents} agentes ativos · {new Intl.NumberFormat("pt-BR").format(plan.limits.monthly_conversations)} conversas automatizadas/mês</p>
+              <strong className={styles.price}>{plan.checkout_enabled ? <>{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(plan.price_cents / 100)}<small>/mês</small></> : <>Sob proposta</>}</strong>
+              <small>{plan.checkout_enabled ? "Cobrança mensal recorrente" : "Implantação e mensalidade personalizadas"}</small>
+              <p className={styles.priceNote}>{plan.limits.users} usuários · {plan.limits.whatsapp} WhatsApps · {plan.limits.active_agents} agentes ativos · {new Intl.NumberFormat("pt-BR").format(plan.limits.monthly_conversations)} respostas de IA/mês</p>
               <ul>{plan.features.map((feature, i) => <li key={i}><span>✓</span>{feature}</li>)}</ul>
-              <PlanCta name={plan.name} destination={`/checkout/${plan.slug}`} />
+              <PlanConfigurator plan={plan} addons={config.addons} />
             </article>
           ))}
         </div>
       </section>
-
-      <section className={styles.pain} aria-label="Adicionais de capacidade"><p className={styles.eyebrow}>CRESCIMENTO SOB CONTROLE</p><h2>Precisa de mais capacidade?</h2><p>Clientes ativos podem adicionar capacidade no checkout seguro da Stripe. A liberação acontece automaticamente após a confirmação do pagamento.</p><ul>{config.addons.filter((addon) => addon.active).map((addon) => <li key={addon.slug}>+{new Intl.NumberFormat("pt-BR").format(addon.units)} {addon.name.toLowerCase()} · {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(addon.price_cents / 100)}/mês</li>)}</ul><a className={styles.secondary} href="/login?next=/app/settings/billing">Acessar e contratar adicional ↗</a></section>
 
       <section className={styles.faq}>
         <p className={styles.eyebrow}>RESPOSTAS DIRETAS</p><h2>Antes de começar.</h2>

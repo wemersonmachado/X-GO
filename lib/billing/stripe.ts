@@ -82,6 +82,7 @@ export async function createCheckoutSession(input: {
   cancelUrl: string;
   idempotencyKey: string;
   quantity?: number;
+  lineItems?: Array<{ name: string; priceCents: number; quantity: number; metadata?: Record<string, string> }>;
 }): Promise<StripeCheckoutSession> {
   const body = toStripeForm({
     mode: "subscription",
@@ -106,17 +107,15 @@ export async function createCheckoutSession(input: {
     customer_email: input.customerEmail || undefined,
     metadata: input.metadata,
     subscription_data: { metadata: input.metadata },
-    line_items: [
-      {
-        quantity: input.quantity ?? 1,
-        price_data: {
-          currency: input.currency.toLowerCase(),
-          unit_amount: input.priceCents,
-          recurring: { interval: "month" },
-          product_data: { name: input.planName, metadata: { plan_slug: input.planSlug } },
-        },
+    line_items: (input.lineItems ?? [{ name: input.planName, priceCents: input.priceCents, quantity: input.quantity ?? 1, metadata: { plan_slug: input.planSlug } }]).map((item) => ({
+      quantity: item.quantity,
+      price_data: {
+        currency: input.currency.toLowerCase(),
+        unit_amount: item.priceCents,
+        recurring: { interval: "month" },
+        product_data: { name: item.name, metadata: item.metadata ?? {} },
       },
-    ],
+    })),
   });
   return stripeApi<StripeCheckoutSession>("/checkout/sessions", {
     method: "POST",

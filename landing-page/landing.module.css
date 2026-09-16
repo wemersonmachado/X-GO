@@ -212,6 +212,12 @@
 .plan li span { color: var(--landing-accent); }
 .plan form { display: flex; }
 .plan form .primary { width: 100%; font-size: 12px; }
+.planConfigurator { display: grid!important; gap: 12px; }
+.expansion { display: grid; gap: 8px; padding: 13px; border: 1px solid color-mix(in srgb, var(--landing-accent) 30%, var(--line)); border-radius: 10px; background: color-mix(in srgb, var(--landing-accent) 5%, var(--panel)); }
+.expansion > p { margin: 0; color: var(--landing-accent); font-size: 8px; font-weight: 800; letter-spacing: 1.5px; }
+.addonRow { display: grid; grid-template-columns: 1fr 25px 22px 25px; align-items: center; gap: 6px; font-size: 11px; }
+.addonRow span { min-width: 0; }.addonRow strong,.addonRow small { display:block; }.addonRow small { color:var(--muted); font-size:9px; }.addonRow button { width:25px; height:25px; border:1px solid var(--line); border-radius:5px; background:transparent; color:var(--ink); cursor:pointer; }.addonRow button:disabled { opacity:.35; cursor:not-allowed; }.addonRow b { text-align:center; font-size:12px; }
+.planTotal { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }.planTotal span { color:var(--muted); font-size:9px; font-weight:800; letter-spacing:1px; }.planTotal strong { font-size:18px; }.planTotal small { font-size:10px; }.addedBenefits { margin:0!important; color:var(--muted); font-size:10px!important; line-height:1.45; }
 
 .faq { max-width: 900px; padding-block: 100px; }
 .faq h2 { margin-bottom: 35px; }

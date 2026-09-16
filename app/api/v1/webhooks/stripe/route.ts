@@ -193,10 +193,7 @@ export async function POST(request: Request): Promise<Response> {
         "fn_sync_stripe_addon" as never,
         { p_event_type: event.type, p_subscription_id: subscriptionId, p_payment_id: paymentIntentId, p_status: lifecycleStatus, p_current_period_end: periodEnd } as never,
       );
-      if (!addonSyncError && record(addonSyncData)?.matched === true) {
-        if (!await finish(true)) return fail("internal_error", "Evento não finalizado.", 500);
-        return ok({ received: true, addon_updated: true });
-      }
+      const addonMatched = !addonSyncError && record(addonSyncData)?.matched === true;
       const { data: syncedData, error: syncError } = await admin.rpc(
         "fn_sync_stripe_subscription" as never,
         {
@@ -210,7 +207,7 @@ export async function POST(request: Request): Promise<Response> {
       );
       const synced = syncSchema.safeParse(syncedData);
       if (syncError || !synced.success) throw new Error("subscription_sync_failed");
-      if (!synced.data.matched) throw new Error("subscription_not_found");
+      if (!synced.data.matched && !addonMatched) throw new Error("subscription_not_found");
       if (synced.data.matched && synced.data.organization_id) {
         await audit({
           action: "billing.subscription_synced",
@@ -229,7 +226,7 @@ export async function POST(request: Request): Promise<Response> {
         });
       }
       if (!await finish(true)) return fail("internal_error", "Evento não finalizado.", 500);
-      return ok({ received: true, subscription_updated: synced.data.matched, status: synced.data.status ?? null });
+      return ok({ received: true, subscription_updated: synced.data.matched, addon_updated: addonMatched, status: synced.data.status ?? null });
     }
 
     if (!PROVISION_EVENTS.has(event.type)) {
@@ -284,16 +281,15 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const { data: provisioned, error: provisionError } = await admin.rpc(
-      "fn_provision_paid_checkout" as never,
+      "fn_apply_paid_stripe_plan_bundle" as never,
       {
-        p_provider: "stripe",
         p_checkout_session_id: checkoutSessionId,
         p_payment_id: paymentIntentId ?? checkoutSessionId,
         p_subscription_id: subscriptionId ?? "",
         p_customer_id: customerId,
         p_checkout_intent_id: checkoutIntent.data,
         p_plan_slug: planSlug,
-        p_value_cents: amountTotal,
+        p_total_value_cents: amountTotal,
         p_customer_name: name,
         p_email_hash: hashEmail(email),
       } as never,

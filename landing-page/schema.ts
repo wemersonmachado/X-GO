@@ -26,7 +26,7 @@ export const landingSchema = z.object({
   steps: z.array(card).min(3).max(6),
   pricing_title: text,
   pricing_note: text,
-  plans: z.array(z.object({ slug: z.enum(["standard", "pro", "enterprise"]), name: text, price_cents: z.number().int().min(100).max(10_000_000), payment_link_id: z.string().trim().max(120), checkout_url: checkout, description: text, features: z.array(text).min(1).max(8), limits: planLimits }).strict()).length(3),
+  plans: z.array(z.object({ slug: z.enum(["standard", "pro", "enterprise"]), name: text, price_cents: z.number().int().min(100).max(10_000_000), payment_link_id: z.string().trim().max(120), checkout_url: checkout, checkout_enabled: z.boolean().default(true), description: text, features: z.array(text).min(1).max(8), limits: planLimits }).strict()).length(3),
   addons: z.array(addon).length(4),
   faq: z.array(z.object({ question: text, answer: text }).strict()).min(1).max(10),
   closing_title: text,
@@ -59,15 +59,15 @@ export const DEFAULT_LANDING: LandingConfig = {
   pricing_title: "Encontre o formato da sua operação.",
   pricing_note: "Escolha o plano ideal e conclua a contratação no ambiente seguro de pagamentos.",
   plans: [
-    { slug: "standard", name: "Standard", price_cents: 19700, payment_link_id: "", checkout_url: "", description: "Para organizar os primeiros atendimentos.", features: ["Caixa de entrada compartilhada", "Contatos e funil de vendas", "MCP e configuração inicial de agente"], limits: { users: 3, whatsapp: 3, active_agents: 3, monthly_conversations: 3000, mcp: true } },
-    { slug: "pro", name: "Pro", price_cents: 49700, payment_link_id: "", checkout_url: "", description: "Para uma operação com mais fluxos e automação.", features: ["Recursos do Standard", "Agentes e base de conhecimento", "Fluxos e acompanhamento de consumo"], limits: { users: 10, whatsapp: 10, active_agents: 10, monthly_conversations: 15000, mcp: true } },
-    { slug: "enterprise", name: "Enterprise", price_cents: 99700, payment_link_id: "", checkout_url: "", description: "Para desenhar uma operação personalizada.", features: ["Recursos do Pro", "Integrações externas por MCP", "Suporte prioritário e personalização"], limits: { users: 20, whatsapp: 20, active_agents: 25, monthly_conversations: 50000, mcp: true } },
+    { slug: "standard", name: "Standard", price_cents: 19700, payment_link_id: "", checkout_url: "", checkout_enabled: true, description: "Para organizar os primeiros atendimentos.", features: ["Caixa de entrada compartilhada", "Contatos e funil de vendas", "MCP e configuração inicial de agente"], limits: { users: 3, whatsapp: 1, active_agents: 3, monthly_conversations: 3000, mcp: true } },
+    { slug: "pro", name: "Pro", price_cents: 49700, payment_link_id: "", checkout_url: "", checkout_enabled: true, description: "Para uma operação com mais fluxos e automação.", features: ["Recursos do Standard", "Agentes e base de conhecimento", "Fluxos e acompanhamento de consumo"], limits: { users: 10, whatsapp: 3, active_agents: 10, monthly_conversations: 15000, mcp: true } },
+    { slug: "enterprise", name: "Enterprise", price_cents: 99700, payment_link_id: "", checkout_url: "", checkout_enabled: false, description: "Implantação e mensalidade desenhadas para a sua operação.", features: ["Recursos do Pro", "Integrações externas por MCP", "Suporte prioritário e personalização"], limits: { users: 20, whatsapp: 20, active_agents: 25, monthly_conversations: 50000, mcp: true } },
   ],
   addons: [
     { slug: "extra_user", name: "Usuário adicional", resource: "users", units: 1, price_cents: 3900, active: true },
     { slug: "extra_whatsapp", name: "WhatsApp adicional", resource: "whatsapp", units: 1, price_cents: 9900, active: true },
     { slug: "extra_active_agent", name: "Agente ativo adicional", resource: "active_agents", units: 1, price_cents: 7900, active: true },
-    { slug: "extra_conversations_1000", name: "Mais 1.000 conversas automatizadas", resource: "monthly_conversations", units: 1000, price_cents: 4900, active: true },
+    { slug: "extra_conversations_1000", name: "Mais 1.000 respostas de IA", resource: "monthly_conversations", units: 1000, price_cents: 4900, active: true },
   ],
   faq: [
     { question: "Preciso trocar a minha equipe por IA?", answer: "Não. Agentes e pessoas trabalham juntos. Você define a atuação da IA e quando encaminhar a conversa para um atendente." },

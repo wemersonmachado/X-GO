@@ -11,6 +11,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const slugSchema = z.enum(["standard", "pro", "enterprise"]);
 const formSchema = z.object({ intent_key: z.string().uuid() });
+const ADDON_SLUGS = ["extra_user", "extra_whatsapp", "extra_active_agent", "extra_conversations_1000"] as const;
+type AddonSnapshot = { slug: typeof ADDON_SLUGS[number]; name: string; resource: string; units: number; price_cents: number; quantity: number; revision: number };
 
 function clientIp(request: Request): string | null {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
@@ -70,9 +72,10 @@ export async function POST(
     return Response.redirect(`${base}/?checkout=indisponivel`, 303);
   }
   const intentId = parsedForm.data.intent_key;
+  const quantities = Object.fromEntries(ADDON_SLUGS.map((slug) => [slug, z.coerce.number().int().min(0).max(100).safeParse(form.get(`addon_${slug}`)).data ?? 0])) as Record<typeof ADDON_SLUGS[number], number>;
   const { data: existingIntent, error: existingError } = await admin
     .from("platform_checkout_intents" as never)
-    .select("id,plan_slug,price_cents,currency" as never)
+    .select("id,plan_slug,price_cents,currency,total_price_cents,addons_snapshot" as never)
     .eq("id" as never, intentId)
     .maybeSingle();
   if (existingError) {
@@ -80,7 +83,7 @@ export async function POST(
     return Response.redirect(`${base}/?checkout=indisponivel`, 303);
   }
   const existing = existingIntent as unknown as
-    | { id: string; plan_slug: string; price_cents: number; currency: string }
+    | { id: string; plan_slug: string; price_cents: number; currency: string; total_price_cents: number | null; addons_snapshot: AddonSnapshot[] | null }
     | null;
   let intentSnapshot = existing;
   if (existing && existing.plan_slug !== plan.slug) {
@@ -88,21 +91,30 @@ export async function POST(
   }
   if (!existing) {
     if (!plan.active) return Response.redirect(`${base}/?checkout=indisponivel`, 303);
+    const { data: catalogData, error: catalogError } = await admin.from("platform_billing_addons" as never)
+      .select("slug,name,resource,units,price_cents,revision,active" as never).in("slug" as never, ADDON_SLUGS as unknown as string[]);
+    if (catalogError) return Response.redirect(`${base}/?checkout=indisponivel`, 303);
+    const addons = ((catalogData ?? []) as unknown as Array<{ slug: string; name: string; resource: string; units: number; price_cents: number; revision: number; active: boolean }>)
+      .filter((addon): addon is typeof addon & { slug: typeof ADDON_SLUGS[number] } => ADDON_SLUGS.includes(addon.slug as typeof ADDON_SLUGS[number]) && addon.active && quantities[addon.slug as typeof ADDON_SLUGS[number]] > 0)
+      .map((addon) => ({ ...addon, quantity: quantities[addon.slug] }));
+    const totalPriceCents = plan.price_cents + addons.reduce((total, addon) => total + addon.price_cents * addon.quantity, 0);
     const { error: insertError } = await admin.from("platform_checkout_intents" as never).insert({
       id: intentId,
       plan_slug: plan.slug,
       price_cents: plan.price_cents,
+      total_price_cents: totalPriceCents,
+      addons_snapshot: addons,
       currency: plan.currency,
       status: "creating",
     } as never);
     if (insertError) {
       const { data: racedIntent } = await admin
         .from("platform_checkout_intents" as never)
-        .select("plan_slug,price_cents,currency" as never)
+        .select("plan_slug,price_cents,currency,total_price_cents,addons_snapshot" as never)
         .eq("id" as never, intentId)
         .maybeSingle();
       const raced = racedIntent as unknown as
-        | { plan_slug: string; price_cents: number; currency: string }
+        | { plan_slug: string; price_cents: number; currency: string; total_price_cents: number | null; addons_snapshot: AddonSnapshot[] | null }
         | null;
       if (!raced || raced.plan_slug !== plan.slug) {
         logger.error("[billing.stripe] falha ao persistir intenção de checkout", { plan: plan.slug });
@@ -114,6 +126,7 @@ export async function POST(
 
   const checkoutPrice = intentSnapshot?.price_cents ?? plan.price_cents;
   const checkoutCurrency = intentSnapshot?.currency ?? plan.currency;
+  const selectedAddons = Array.isArray(intentSnapshot?.addons_snapshot) ? intentSnapshot.addons_snapshot : [];
 
   const user = await loadAuthUser().catch(() => null);
   const userId = user?.id ?? "guest";
@@ -126,10 +139,14 @@ export async function POST(
       currency: checkoutCurrency,
       customerEmail: user?.email ?? null,
       clientReferenceId: userId,
-      metadata: { plan_slug: plan.slug, user_id: userId, checkout_intent_id: intentId },
+      metadata: { plan_slug: plan.slug, user_id: userId, checkout_intent_id: intentId, checkout_kind: "new_org" },
       successUrl: `${base}/checkout/sucesso`,
       cancelUrl: `${base}/#planos`,
       idempotencyKey: `checkout-${intentId}`,
+      lineItems: [
+        { name: plan.name, priceCents: checkoutPrice, quantity: 1, metadata: { plan_slug: plan.slug, kind: "base" } },
+        ...selectedAddons.map((addon) => ({ name: addon.name, priceCents: addon.price_cents, quantity: addon.quantity, metadata: { addon_slug: addon.slug, kind: "addon" } })),
+      ],
     });
     if (!session.url) throw new Error("stripe_session_sem_url");
     const { error: updateError } = await admin
