@@ -62,7 +62,7 @@ export function PlanConfigurator({ plan, addons }: { plan: Plan; addons: Addon[]
       })}
     </div>
     <div className={styles.planTotal}><span>TOTAL MENSAL NO CHECKOUT</span><strong>{money(total)}<small>/mês</small></strong></div>
-    {selected.length > 0 && <p className={styles.addedBenefits}>Inclui: {selected.map((addon) => `+${quantities[addon.slug] * addon.units} ${addon.name.toLowerCase()}`).join(" · ")}</p>}
+    {selected.length > 0 && <p className={styles.addedBenefits}>Inclui: {selected.map((addon) => `+${(quantities[addon.slug] ?? 0) * addon.units} ${addon.name.toLowerCase()}`).join(" · ")}</p>}
     <button className={styles.primary} type="submit">Contratar {plan.name} ↗</button>
   </form>;
 }
