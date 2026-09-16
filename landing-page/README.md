@@ -2,7 +2,7 @@
 
 ## Organização
 
-`LandingPage.tsx` e `landing.module.css`: página renderizada no servidor, cards e cena 3D em CSS, FAQ nativa e movimento reduzido. Não utiliza bibliotecas de animação, imagens remotas nem rastreadores adicionais.
+`LandingPage.tsx` e `landing.module.css`: página renderizada no servidor, cena 3D, painel operacional ilustrativo, cards e transições em CSS, FAQ nativa e suporte a movimento reduzido. Não utiliza JavaScript no cliente para animar, bibliotecas de animação, imagens remotas nem rastreadores adicionais.
 
 `schema.ts`: conteúdo padrão e validação; três planos mensais com preço em centavos e checkout próprio. `server.ts`: leitura pública com fallback. `SettingsForm.tsx` e `actions.ts`: editor protegido por superadmin, escopo completo e MFA da sessão. Ao publicar, só grava em `platform_billing_plans` — checkout é dinâmico (Stripe Checkout Session criada na hora do clique), então não há nenhum provedor externo pra sincronizar.
 
