@@ -7,7 +7,12 @@ import { describe, expect, it } from "vitest";
 
 import { motivoDoErro, sql } from "./psql-transporte";
 
-const TABELAS = ["organization_subscriptions", "platform_checkout_access"] as const;
+const TABELAS = [
+  "organization_subscriptions",
+  "platform_checkout_access",
+  "platform_checkout_intents",
+  "platform_subscription_payments",
+] as const;
 
 function privileges(role: string, table: string): string {
   return sql(`
@@ -25,7 +30,7 @@ function hasPrivilege(role: string, table: string, privilege: string): boolean {
 
 function denied(role: string, table: string): string | null {
   try {
-    sql(`set role ${role}; select organization_id from public.${table}; reset role;`);
+    sql(`set role ${role}; select * from public.${table}; reset role;`);
     return null;
   } catch (error) {
     return motivoDoErro(error);

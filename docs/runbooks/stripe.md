@@ -2,9 +2,10 @@
 
 ## Estado e fonte de verdade
 
-- Não existe link fixo. Cada clique em "Contratar" cria uma **Checkout Session** nova
-  (`app/checkout/[slug]/route.ts`) com `price_data` montado na hora a partir de
-  `platform_billing_plans.price_cents` — o preço cobrado é sempre o valor atual do banco.
+- Não existe link fixo. Cada envio de "Contratar" cria ou reutiliza uma intenção idempotente e
+  uma **Checkout Session** (`app/checkout/[slug]/route.ts`) com `price_data` montado a partir de
+  `platform_billing_plans.price_cents`. A intenção congela o valor apresentado: alterações
+  posteriores valem para novos checkouts e não invalidam boleto já emitido.
 - O superadministrador altera o preço em **Configurações da landing page** e usa
   **Salvar e publicar**. Não há sincronização externa: salvar já é publicar, o próximo
   checkout já usa o valor novo.
@@ -21,16 +22,16 @@
 Endpoint: `POST /api/v1/webhooks/stripe`. O header `Stripe-Signature` é obrigatório;
 `lib/billing/stripe.ts#verifyStripeSignature` recalcula o HMAC-SHA256 sobre
 `${timestamp}.${rawBody}` e compara em tempo constante, com tolerância de 5 minutos contra
-replay. `event.id` é chave única via `fn_record_stripe_event` — reentregas são idempotentes.
+replay. `event.id` é chave única via `fn_claim_stripe_event`. O evento só vira `completed`
+depois de banco, auditoria e entrega; falhas ficam `failed` e a mesma entrega pode retomar.
+Execução concorrente recebe `503` até o lease de cinco minutos vencer.
 
-Escopo do processamento: **só `checkout.session.completed` provisiona acesso** (mesmo escopo
-que o webhook Asaas anterior tinha — só pagamento confirmado agia). Os demais eventos
-registrados no endpoint da Stripe (`invoice.paid`, `invoice.payment_failed`,
-`customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded`,
-`charge.dispute.created`) são só **auditados** em `platform_payment_events` — nenhum consumidor
-lê hoje `organization_subscriptions.status`/`current_period_end` pra bloquear acesso por
-vencimento ou chargeback. Quando essa checagem existir, o handler evolui junto (não é
-esquecimento: é não construir estado que nada consome ainda).
+`checkout.session.completed` e `checkout.session.async_payment_succeeded` provisionam somente
+quando `payment_status=paid`. `invoice.paid`, `invoice.payment_failed` e
+`customer.subscription.*` atualizam a assinatura. `past_due` mantém o acesso enquanto a Stripe
+faz suas tentativas; `unpaid`, `canceled`, reembolso e disputa suspendem a organização. Um
+pagamento posterior reativa apenas suspensão com motivo `billing:*`, sem apagar suspensão
+administrativa.
 
 `plan_slug` vem de `session.metadata`, escrito pelo PRÓPRIO backend ao criar a sessão — nunca
 inferido por valor pago nem por e-mail do cliente. Isso elimina a classe de bug que a auditoria
@@ -41,10 +42,12 @@ pagamento de outro produto na mesma conta Asaas): aqui não existe fallback nenh
 ## Operação
 
 1. Confirme que `https://xgoos.com.br/api/v1/webhooks/stripe` está publicado.
-2. Webhook `we_1UFzRfIGMuUppnm9OfUa762Y` já está cadastrado na conta Stripe (criado em
-   2026-09-15), assinando `checkout.session.completed`, `invoice.paid`,
+2. O webhook da conta Stripe deve assinar `checkout.session.completed`,
+   `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`,
+   `checkout.session.expired`, `invoice.paid`,
    `invoice.payment_failed`, `customer.subscription.updated`,
-   `customer.subscription.deleted`, `charge.refunded`, `charge.dispute.created`.
+   `customer.subscription.deleted`, `charge.refunded`, `charge.dispute.created`,
+   `charge.dispute.closed`.
 3. Publique os preços na landing (**Configurações › Landing page**). O painel
    **Administração › Pagamentos** mostra o valor atual de cada plano e os eventos recebidos.
 4. Uma transação real só é considerada validada depois de um pagamento controlado, criação do
@@ -62,9 +65,9 @@ foi corrigido no provedor antigo.
 ## Recuperação
 
 Como não há link fixo, não há "reconciliar link duplicado". Se a Checkout Session falhar ao
-ser criada, o usuário volta pra landing com `?checkout=indisponivel` e pode tentar de novo —
-nenhum estado fica pendente no banco (a linha em `organization_subscriptions` só nasce depois
-do pagamento confirmado, via webhook).
+ser criada, o usuário volta pra landing com `?checkout=indisponivel`; a intenção fica `failed`
+e o mesmo envio pode ser repetido com a mesma chave idempotente. A linha em
+`organization_subscriptions` só nasce depois do pagamento confirmado, via webhook.
 
 ## Migração histórica (Asaas → Stripe, 2026-09-15)
 

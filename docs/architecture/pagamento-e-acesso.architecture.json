@@ -15,9 +15,9 @@
   "mainPath": ["landing", "stripe", "webhook", "provisionar", "resend", "senha", "app"],
   "nodes": [
     { "id": "landing", "lane": "pessoa", "col": 0, "type": "ui", "label": "Landing › Contratar plano", "sublabel": "preço publicado pelo painel; sem link fixo" },
-    { "id": "stripe", "lane": "integracoes", "col": 1, "type": "external", "label": "Checkout Stripe", "sublabel": "Checkout Session dinâmica (price_data inline), conta exclusiva do X-GO" },
-    { "id": "webhook", "lane": "app", "col": 2, "type": "service", "label": "POST /api/v1/webhooks/stripe", "sublabel": "assinatura HMAC em tempo constante, tolerância de replay, evento minimizado" },
-    { "id": "plano", "lane": "integracoes", "col": 3, "type": "database", "label": "platform_billing_plans", "sublabel": "price_cents é a fonte de verdade, lido a cada Checkout Session criada" },
+    { "id": "stripe", "lane": "integracoes", "col": 1, "type": "external", "label": "Checkout Stripe", "sublabel": "POST idempotente; Checkout Session dinâmica; conta exclusiva do X-GO" },
+    { "id": "webhook", "lane": "app", "col": 2, "type": "service", "label": "POST /api/v1/webhooks/stripe", "sublabel": "HMAC, lease e estados de retry; ciclo completo da assinatura" },
+    { "id": "plano", "lane": "integracoes", "col": 3, "type": "database", "label": "platform_checkout_intents", "sublabel": "snapshot imutável do plano e preço apresentado ao cliente" },
     { "id": "provisionar", "lane": "app", "col": 4, "type": "service", "label": "fn_provision_paid_checkout", "sublabel": "lock, conciliação exata e tenant único por compra" },
     { "id": "recibo", "lane": "integracoes", "col": 5, "type": "database", "label": "platform_checkout_access", "sublabel": "recibo e hash do e-mail; sem PII aberta" },
     { "id": "resend", "lane": "integracoes", "col": 6, "type": "external", "label": "Resend", "sublabel": "convite com chave de idempotência" },
@@ -28,7 +28,7 @@
   "edges": [
     { "from": "landing", "to": "stripe", "label": "abre checkout" },
     { "from": "stripe", "to": "webhook", "label": "checkout.session.completed" },
-    { "from": "webhook", "to": "plano", "label": "confere plan_slug (metadata) e valor" },
+    { "from": "webhook", "to": "plano", "label": "confere sessão, metadata e snapshot" },
     { "from": "plano", "to": "provisionar", "label": "elegível" },
     { "from": "provisionar", "to": "recibo", "label": "persiste antes do e-mail" },
     { "from": "recibo", "to": "resend", "label": "envia ou retenta" },

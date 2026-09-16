@@ -25,7 +25,7 @@ describe("pagamento confirmado e conexão externa", () => {
     expect(message.text).toContain("/team/accept-invite/");
   });
 
-  it("provisionamento é idempotente, confere link/valor e não persiste e-mail aberto", () => {
+  it("provisionamento é idempotente, confere snapshot e não persiste e-mail aberto", () => {
     const sql = readFileSync(
       "supabase/migrations/20260911120000_0238_acesso_apos_pagamento.sql",
       "utf8",
@@ -33,7 +33,12 @@ describe("pagamento confirmado e conexão externa", () => {
     expect(sql).toContain("purchase_key text primary key");
     expect(sql).toContain("pg_advisory_xact_lock");
     expect(sql).toContain("v_plan.price_cents <> p_value_cents");
-    expect(sql).toContain("unknown_or_inactive_payment_link");
+    const stripeSql = readFileSync(
+      "supabase/migrations/20260915220000_0246_stripe_processamento_duravel.sql",
+      "utf8",
+    );
+    expect(stripeSql).toContain("unknown_checkout_intent");
+    expect(stripeSql).toContain("checkout_snapshot_mismatch");
     expect(sql).toContain("email_hash text not null");
     expect(sql).not.toMatch(/\bemail\s+text\b/);
     expect(sql).toMatch(/revoke all on public\.platform_checkout_access[\s\S]+authenticated/);
@@ -45,6 +50,9 @@ describe("pagamento confirmado e conexão externa", () => {
     expect(route).toContain("verifyStripeSignature");
     expect(route).toContain("fn_provision_paid_checkout");
     expect(route).toContain("sendPaidAccess");
+    expect(route).toContain("fn_finish_stripe_event");
+    expect(route).toContain("fn_sync_stripe_subscription");
+    expect(route).not.toContain("return ok({ received: true, access_provisioned: false });");
   });
 
   it("a tela entrega o endpoint MCP, bearer e sequência de prova sem mandar ao painel humano", () => {

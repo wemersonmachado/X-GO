@@ -1,9 +1,16 @@
+import { randomUUID } from "node:crypto";
+
 import styles from "./landing.module.css";
 
 /** Sem checkout configurado, não simula compra nem coleta dados pessoais. */
 export function PlanCta({ name, destination }: { name: string; destination: string }) {
   if (destination) {
-    return <a className={styles.primary} href={destination}>Contratar {name} ↗</a>;
+    return (
+      <form action={destination} method="post">
+        <input name="intent_key" type="hidden" value={randomUUID()} />
+        <button className={styles.primary} type="submit">Contratar {name} ↗</button>
+      </form>
+    );
   }
   return <details className={styles.planCta}>
     <summary className={styles.primary}>Contratar {name} <span aria-hidden>↗</span></summary>
