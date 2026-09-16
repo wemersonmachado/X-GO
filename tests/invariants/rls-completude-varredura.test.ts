@@ -226,6 +226,11 @@ const PROVA_PROPRIA: readonly Excecao[] = [
     razao:
       "tests/invariants/billing-access-rls.test.ts — recibo de pagamento server-only: e-mail fica somente em hash, anon/authenticated sem privilégio e RLS ligada; service_role processa a retentativa.",
   },
+  {
+    tabela: "platform_subscription_payments",
+    razao:
+      "tests/invariants/billing-access-rls.test.ts ? mapa de PaymentIntent server-only: anon/authenticated sem privil?gio, SELECT negado e RLS ligada; service_role reconcilia reembolso e disputa.",
+  },
 ];
 
 /**

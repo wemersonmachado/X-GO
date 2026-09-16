@@ -24572,40 +24572,6 @@ grant execute on function public.fn_provision_paid_checkout(text,text,text,text,
 notify pgrst, 'reload schema';
 -- END 0245_billing_stripe_x_go
 
--- ---- VARREDURA anon: toda função security definer criada no apêndice acima ----
--- Último bloco de propósito: ALTER DEFAULT PRIVILEGES do dump pode fazer uma
--- função nova nascer executável por anon durante UPDATE.
-do $$
-declare
-  f record;
-  tinha_auth boolean;
-  tinha_service boolean;
-begin
-  for f in
-    select p.oid, p.oid::regprocedure as assinatura
-      from pg_proc p
-      join pg_namespace n on n.oid = p.pronamespace
-     where n.nspname = 'public'
-       and p.prosecdef
-  loop
-    tinha_auth := to_regrole('authenticated') is not null
-                  and has_function_privilege('authenticated', f.oid, 'EXECUTE');
-    tinha_service := to_regrole('service_role') is not null
-                     and has_function_privilege('service_role', f.oid, 'EXECUTE');
-
-    execute format('revoke execute on function %s from public, anon', f.assinatura);
-
-    if tinha_auth then
-      execute format('grant execute on function %s to authenticated', f.assinatura);
-    end if;
-    if tinha_service then
-      execute format('grant execute on function %s to service_role', f.assinatura);
-    end if;
-  end loop;
-end $$;
-
-
--- BEGIN 0246_stripe_processamento_duravel
 -- Stripe: checkout idempotente, preço congelado por intenção e inbox reprocessável.
 
 create table if not exists public.platform_checkout_intents (
@@ -24955,3 +24921,38 @@ grant execute on function public.fn_sync_stripe_subscription(text,text,text,text
   to service_role;
 
 notify pgrst, 'reload schema';
+
+-- ---- VARREDURA anon: toda função security definer criada no apêndice acima ----
+-- Último bloco de propósito: ALTER DEFAULT PRIVILEGES do dump pode fazer uma
+-- função nova nascer executável por anon durante UPDATE.
+do $$
+declare
+  f record;
+  tinha_auth boolean;
+  tinha_service boolean;
+begin
+  for f in
+    select p.oid, p.oid::regprocedure as assinatura
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.prosecdef
+  loop
+    tinha_auth := to_regrole('authenticated') is not null
+                  and has_function_privilege('authenticated', f.oid, 'EXECUTE');
+    tinha_service := to_regrole('service_role') is not null
+                     and has_function_privilege('service_role', f.oid, 'EXECUTE');
+
+    execute format('revoke execute on function %s from public, anon', f.assinatura);
+
+    if tinha_auth then
+      execute format('grant execute on function %s to authenticated', f.assinatura);
+    end if;
+    if tinha_service then
+      execute format('grant execute on function %s to service_role', f.assinatura);
+    end if;
+  end loop;
+end $$;
+
+
+-- BEGIN 0246_stripe_processamento_duravel

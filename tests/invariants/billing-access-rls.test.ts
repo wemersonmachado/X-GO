@@ -30,7 +30,7 @@ function hasPrivilege(role: string, table: string, privilege: string): boolean {
 
 function denied(role: string, table: string): string | null {
   try {
-    sql(`set role ${role}; select organization_id from public.${table}; reset role;`);
+    sql(`set role ${role}; select * from public.${table}; reset role;`);
     return null;
   } catch (error) {
     return motivoDoErro(error);
