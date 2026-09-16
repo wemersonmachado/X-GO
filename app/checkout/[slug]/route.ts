@@ -121,6 +121,18 @@ export async function POST(
         return Response.redirect(`${base}/?checkout=indisponivel`, 303);
       }
       intentSnapshot = { id: intentId, ...raced };
+    } else {
+      // A primeira compra também precisa usar o snapshot que acabou de ser
+      // gravado. Sem atribuí-lo aqui, só tentativas repetidas levavam os
+      // adicionais à Stripe — o card mostrava o total certo e o checkout não.
+      intentSnapshot = {
+        id: intentId,
+        plan_slug: plan.slug,
+        price_cents: plan.price_cents,
+        currency: plan.currency,
+        total_price_cents: totalPriceCents,
+        addons_snapshot: addons,
+      };
     }
   }
 
