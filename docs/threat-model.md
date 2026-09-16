@@ -141,32 +141,34 @@ um handler novo nasça sem filtro e sem invariante correspondente.
 quando um arquivo importa `lib/supabase/admin` sem referenciar `organization_id`. Barato,
 determinístico, e transforma disciplina em gate.
 
-### T4 — Secret de convite com fallback conhecido 🟠 CONFIRMADO no código, mitigado na prática
+### T4 — Secret de convite com fallback conhecido ✅ CORRIGIDO (2026-09-16)
 
-`lib/auth/invite-token.ts:16`:
+`lib/auth/invite-token.ts:16` costumava resolver:
 
 ```
 INVITE_TOKEN_SECRET → INTERNAL_SECRET → "dev-fallback"
 ```
 
-Se a cadeia chegar em `"dev-fallback"`, qualquer pessoa com o repo público forja um token
-de convite válido — payload inclui `organization_id` e `role`, ou seja: **admin em qualquer
-org**.
+Se a cadeia chegasse em `"dev-fallback"`, qualquer pessoa com o repo público forjava um
+token de convite válido — payload inclui `organization_id` e `role`, ou seja: **admin em
+qualquer org**.
 
-**Mitigação existente:** `INTERNAL_SECRET` é `required()` em `lib/env.ts:47`, que em
-`NODE_ENV=production` **derruba o boot** se estiver vazio. Então numa instância de produção
-que subiu, o fallback é inalcançável (INFERIDO — depende de o self-host rodar com
-`NODE_ENV=production`, o que é o esperado com `next start`).
+**Mitigação que já existia:** `INTERNAL_SECRET` é `required()` em `lib/env.ts:47`, que em
+`NODE_ENV=production` derruba o boot se estiver vazio — numa instância de produção que
+subiu, o fallback já era inalcançável.
 
-**Residual:** (a) em dev a validação afrouxa e a var vira `""` — e string vazia é falsy,
-então cai no `"dev-fallback"`; (b) `invite-token.ts` lê `process.env` **cru**, contornando
-o Zod, então não herda garantia nenhuma; (c) `INVITE_TOKEN_SECRET` não existe em
-`lib/env.ts` nem em `.env.example`, só em docs de épico.
-Já está rastreado pelo projeto como risco **M4** em `docs/testing/user-journey-map.md` —
-crédito onde é devido.
+**O que foi corrigido:** o literal `"dev-fallback"` foi **removido**. `SECRET()` agora usa
+`||` (não `??`, que deixava passar string vazia) e **lança** se nem `INVITE_TOKEN_SECRET`
+nem `INTERNAL_SECRET` estiverem configuradas — em vez de degradar para um valor público, em
+QUALQUER ambiente (produção e dev). Fechou o residual (a) da versão anterior deste
+parágrafo (dev com var vazia caindo no fallback). O residual (b) — `invite-token.ts` lê
+`process.env` cru, sem passar pelo Zod de `lib/env.ts` — continua: a correção não trocou a
+fonte, só removeu o valor-padrão perigoso no fim da cadeia.
 
-**Mitigação recomendada:** eliminar o literal. Falhar alto (`throw`) quando nenhum secret
-existe, em vez de degradar para um valor público.
+Achado e corrigido numa auditoria funcional/segurança ao vivo da plataforma
+(`docs/testing/user-journey-map.md`, risco **M4** — também atualizado). PR
+[#18](https://github.com/wemersonmachado/X-GO/pull/18), commit `92fcd5a2` em produção,
+17 testes cobrindo o caminho de assinatura/verificação de convite continuam verdes.
 
 ### T5 — Secrets ausentes do `.env.example` 🟠 CONFIRMADO
 
@@ -233,6 +235,30 @@ Não avaliado por falta de execução/instância:
 - Escopo do service role key no Supabase e rotação de chaves.
 - Efetividade do `beforeSend` do Sentry contra PII real.
 
+### T9 — `main` sem branch protection no fork de produção 🟠 CONFIRMADO (instância viva)
+
+Medido em 2026-09-16 contra `wemersonmachado/X-GO` (o fork que está de fato deployado em
+`xgoos.com.br`, via Railway) com o mesmo comando que `CLAUDE.md` usa para provar os 5
+checks obrigatórios no upstream:
+
+```
+$ gh api repos/wemersonmachado/X-GO/branches/main/protection
+{"message":"Branch not protected","status":"404"}
+```
+
+A doutrina de 5 checks obrigatórios (`verify, build-and-size, invariants, e2e,
+imagens-ok`) documentada em `CLAUDE.md` **é real e mede certo — contra
+`melgarafael/DeskcommCRM`**, o upstream. Ela não se propagou para este fork. Os workflows
+rodam aqui (confirmado: todos os 5 passaram na PR #18), mas nada os torna
+*obrigatórios* — um `git push origin main` direto, sem PR, vai para produção via Railway
+sem nenhum gate, porque o deploy não depende de o PR ter sido revisado, só de a imagem
+`ghcr.io/.../deskcommcrm:latest` existir.
+
+**Mitigação recomendada:** replicar a configuração de branch protection do upstream neste
+fork (`gh api repos/wemersonmachado/X-GO/branches/main/protection -X PUT ...` com os
+mesmos 5 `required_status_checks`), ou aceitar o risco explicitamente se o fork for de uso
+interno de confiança única.
+
 ---
 
 ## 3. Sumário de prioridade
@@ -242,10 +268,11 @@ Não avaliado por falta de execução/instância:
 | T1 | Sem rate limit em login/signup/convite/crons/MCP | 🔴 | baixo — infra já existe |
 | T2 | Rate limit degrada silenciosamente para memória | 🟠 | baixo |
 | T3 | Service role sem gate de escrita para handler novo | 🟠 | médio (lint rule) — invariantes já cobrem em CI |
-| T4 | `"dev-fallback"` como secret de convite | 🟠 | trivial |
+| T4 | ~~`"dev-fallback"` como secret de convite~~ | ✅ | corrigido 2026-09-16 |
 | T5 | 3 secrets fora do `.env.example` | 🟠 | trivial |
 | T7 | Sem scan de secret no CI + 116 PNGs de evidência sem revisão de PII | 🟡 | baixo |
 | T6 | Guard de SSRF existe; o E2E que o prova não roda no CI | 🟢 | baixo |
+| T9 | `main` do fork de produção sem branch protection | 🟠 | baixo — replicar config do upstream |
 
 **Conclusão honesta:** os *mecanismos* de segurança deste projeto são acima da média para
 um CRM open-source — HMAC em tempo constante em toda borda, fail-closed nos crons, hash de

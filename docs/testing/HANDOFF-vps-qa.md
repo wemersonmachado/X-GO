@@ -82,7 +82,8 @@ os bugs achados na causa raiz.
 - **M2/M10** — trilha manual do `docs/deploy-selfhost/README.md` não configura o
   cron do drain → automações morrem em silêncio numa VPS que não usou o kit.
 - **M3** — README self-host aponta repo/imagem `deskcommcrm/*`; kit usa `melgarafael/*`.
-- **M4** — `INVITE_TOKEN_SECRET` ausente → fallback `"dev-fallback"` → convite forjável.
+- ~~**M4** — `INVITE_TOKEN_SECRET` ausente → fallback `"dev-fallback"` → convite forjável.~~
+  **CORRIGIDO 2026-09-16**, ver `docs/testing/user-journey-map.md` e `docs/threat-model.md` T4.
 - **M5** — AI Gateway key ausente → bot mudo sem feedback na UI.
 - **M6** — Knowledge sources: upload de FAQ/política é stub "Em breve".
 - Rate limit do GoTrue morde sob carga de muitos logins (artefato de suíte em lote,
@@ -94,4 +95,4 @@ os bugs achados na causa raiz.
    J2.3/J2.4 (conexão WORKING) e J3.4–J3.9 (IA respondendo mensagens de verdade).
 2. J4 restante: criar lead pela UI, drag-and-drop, ganhar/perder (specs novos).
 3. J7 exploração: varrer todas as rotas como admin e agent, caçar tela quebrada.
-4. Endereçar M2/M3/M4 (docs + segurança do convite) se entrarem no escopo.
+4. Endereçar M2/M3 (docs) se entrarem no escopo — M4 já corrigido.
