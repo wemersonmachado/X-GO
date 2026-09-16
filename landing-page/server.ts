@@ -17,7 +17,10 @@ export const readLanding = cache(async () => {
       // sobrescrever uma escolha explícita feita pelo administrador.
       if (index === 0 && limits.whatsapp === 3) limits.whatsapp = 1;
       if (index === 1 && limits.whatsapp === 10) limits.whatsapp = 3;
-      return { ...(plan as Record<string, unknown>), limits, checkout_enabled: (plan as { checkout_enabled?: unknown }).checkout_enabled ?? DEFAULT_LANDING.plans[index]?.checkout_enabled };
+      const features = Array.isArray((plan as { features?: unknown }).features) && (plan as { features: unknown[] }).features.length >= 6
+        ? (plan as { features: unknown[] }).features
+        : DEFAULT_LANDING.plans[index]?.features;
+      return { ...(plan as Record<string, unknown>), limits, features, checkout_enabled: (plan as { checkout_enabled?: unknown }).checkout_enabled ?? DEFAULT_LANDING.plans[index]?.checkout_enabled };
     }), addons: (stored as { addons?: unknown }).addons ?? DEFAULT_LANDING.addons }
     : stored;
   const parsed = landingSchema.safeParse(normalized);

@@ -175,9 +175,6 @@ export async function LandingPage() {
               {index === 1 && <span className={styles.popular}>MAIS ESCOLHIDO</span>}
               <p className={styles.planLabel}>{index === 1 ? "MAIS POSSIBILIDADES" : "SEU PRÓXIMO PASSO"}</p>
               <h3>{plan.name}</h3><p>{plan.description}</p>
-              <strong className={styles.price}>{plan.checkout_enabled ? <>{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(plan.price_cents / 100)}<small>/mês</small></> : <>Sob proposta</>}</strong>
-              <small>{plan.checkout_enabled ? "Cobrança mensal recorrente" : "Implantação e mensalidade personalizadas"}</small>
-              <p className={styles.priceNote}>{plan.limits.users} usuários · {plan.limits.whatsapp} WhatsApps · {plan.limits.active_agents} agentes ativos · {new Intl.NumberFormat("pt-BR").format(plan.limits.monthly_conversations)} respostas de IA/mês</p>
               <ul>{plan.features.map((feature, i) => <li key={i}><span>✓</span>{feature}</li>)}</ul>
               <PlanConfigurator plan={plan} addons={config.addons} />
             </article>
