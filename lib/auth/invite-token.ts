@@ -6,16 +6,22 @@
  *   - body = base64url(JSON({invite_id, email, organization_id, role, exp}))
  *   - sig  = base64url(HMAC_SHA256(secret, body))
  *
- * Secret resolution: INVITE_TOKEN_SECRET → INTERNAL_SECRET → "dev-fallback".
- * Production deployments MUST set one of the first two. Verification uses
- * `timingSafeEqual` to avoid timing oracles.
+ * Secret resolution: INVITE_TOKEN_SECRET → INTERNAL_SECRET. Nenhum fallback
+ * público: se nenhum dos dois estiver configurado, assinar/verificar lança —
+ * um convite forjável (payload inclui organization_id e role) é pior que um
+ * boot que falha. Verification uses `timingSafeEqual` to avoid timing oracles.
  */
 import { z } from "zod";
 import { interfaceSettingsSchema, type InterfaceSettings } from "@/lib/navigation/interface";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-const SECRET = (): string =>
-  process.env.INVITE_TOKEN_SECRET ?? process.env.INTERNAL_SECRET ?? "dev-fallback";
+const SECRET = (): string => {
+  const secret = process.env.INVITE_TOKEN_SECRET || process.env.INTERNAL_SECRET;
+  if (!secret) {
+    throw new Error("INVITE_TOKEN_SECRET ou INTERNAL_SECRET precisa estar configurado para assinar/verificar convites.");
+  }
+  return secret;
+};
 
 export interface InvitePayload {
   interface_settings?: InterfaceSettings;
