@@ -20,10 +20,15 @@ export async function saveLanding(input: unknown) {
   const published = parsed.data;
   const admin = createAdminClient();
   const { error: planError } = await admin.from("platform_billing_plans" as never).upsert(
-    parsed.data.plans.map((plan) => ({ slug: plan.slug, name: plan.name, price_cents: plan.price_cents, currency: "BRL", billing_cycle: "MONTHLY", active: true })) as never,
+    parsed.data.plans.map((plan) => ({ slug: plan.slug, name: plan.name, price_cents: plan.price_cents, limits: plan.limits, currency: "BRL", billing_cycle: "MONTHLY", active: true, revision: new Date().getTime() })) as never,
     { onConflict: "slug" } as never,
   );
   if (planError) return { error: "Não foi possível salvar os planos. Tente novamente." };
+  const { error: addonError } = await admin.from("platform_billing_addons" as never).upsert(
+    published.addons.map((addon) => ({ ...addon, revision: new Date().getTime() })) as never,
+    { onConflict: "slug" } as never,
+  );
+  if (addonError) return { error: "Não foi possível salvar os adicionais. Tente novamente." };
   const { error } = await admin.from("platform_branding").update({ landing_page: published } as never).eq("id", 1).select("id").single();
   if (error) return { error: "Não foi possível salvar. Tente novamente; suas alterações continuam no formulário." };
   await audit({ action: "platform_branding.updated", actorUserId: user.id, resourceType: "platform_branding", actingAsPlatformAdmin: true, metadata: { area: "landing_page" } });

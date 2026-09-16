@@ -1,0 +1,16 @@
+{
+  "name": "cotas-comerciais-stripe",
+  "nodes": [
+    { "id": "catalog", "kind": "database", "label": "Planos e adicionais" },
+    { "id": "checkout", "kind": "api", "label": "Checkout Stripe" },
+    { "id": "webhook", "kind": "api", "label": "Webhook Stripe" },
+    { "id": "entitlements", "kind": "database", "label": "Entitlements e cotas" },
+    { "id": "runtime", "kind": "worker", "label": "Agentes e conversas" },
+    { "id": "billing-ui", "kind": "ui", "label": "Plano e cobrança" }
+  ],
+  "edges": [
+    ["catalog", "checkout"], ["checkout", "webhook"], ["webhook", "entitlements"],
+    ["entitlements", "runtime"], ["entitlements", "billing-ui"], ["billing-ui", "checkout"]
+  ],
+  "feedback_loop": "Uso é visível em Billing; ao atingir a cota, o banco impede nova automação ou ativação e o usuário compra adicional para liberar capacidade."
+}

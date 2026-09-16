@@ -108,6 +108,7 @@ export async function POST(request: Request): Promise<Response> {
   const admin = createAdminClient();
   const occurredAt = event.created ? new Date(event.created * 1000).toISOString() : null;
   const metadata = record(object.metadata);
+  const checkoutKind = metadata?.checkout_kind === "addon" ? "addon" : "new_org";
   const planSlug = typeof metadata?.plan_slug === "string" && VALID_PLANS.has(metadata.plan_slug)
     ? metadata.plan_slug
     : null;
@@ -188,6 +189,14 @@ export async function POST(request: Request): Promise<Response> {
           ? "refunded"
           : "partially_refunded"
         : typeof object.status === "string" ? object.status : null;
+      const { data: addonSyncData, error: addonSyncError } = await admin.rpc(
+        "fn_sync_stripe_addon" as never,
+        { p_event_type: event.type, p_subscription_id: subscriptionId, p_payment_id: paymentIntentId, p_status: lifecycleStatus, p_current_period_end: periodEnd } as never,
+      );
+      if (!addonSyncError && record(addonSyncData)?.matched === true) {
+        if (!await finish(true)) return fail("internal_error", "Evento não finalizado.", 500);
+        return ok({ received: true, addon_updated: true });
+      }
       const { data: syncedData, error: syncError } = await admin.rpc(
         "fn_sync_stripe_subscription" as never,
         {
@@ -245,6 +254,20 @@ export async function POST(request: Request): Promise<Response> {
     const name = (typeof customerDetails?.name === "string" && customerDetails.name.trim())
       || (email ? email.split("@")[0] : null)
       || "Cliente";
+
+    if (checkoutKind === "addon") {
+      if (!checkoutIntent.success || !checkoutSessionId || !paymentIntentId || !subscriptionId || amountTotal == null) {
+        await finish(false, "paid_addon_event_missing_required_data");
+        return fail("validation_failed", "Adicional sem dados reconciliáveis.", 500);
+      }
+      const { data: addonData, error: addonError } = await admin.rpc("fn_apply_paid_stripe_addon" as never, {
+        p_checkout_session_id: checkoutSessionId, p_payment_id: paymentIntentId, p_subscription_id: subscriptionId,
+        p_checkout_intent_id: checkoutIntent.data, p_value_cents: amountTotal,
+      } as never);
+      if (addonError || record(addonData)?.eligible !== true) throw new Error("addon_checkout_not_eligible");
+      if (!await finish(true)) return fail("internal_error", "Evento não finalizado.", 500);
+      return ok({ received: true, addon_activated: true });
+    }
 
     if (!checkoutIntent.success || !planSlug || !checkoutSessionId || !customerId
       || amountTotal == null || !email) {

@@ -81,6 +81,7 @@ export async function createCheckoutSession(input: {
   successUrl: string;
   cancelUrl: string;
   idempotencyKey: string;
+  quantity?: number;
 }): Promise<StripeCheckoutSession> {
   const body = toStripeForm({
     mode: "subscription",
@@ -107,7 +108,7 @@ export async function createCheckoutSession(input: {
     subscription_data: { metadata: input.metadata },
     line_items: [
       {
-        quantity: 1,
+        quantity: input.quantity ?? 1,
         price_data: {
           currency: input.currency.toLowerCase(),
           unit_amount: input.priceCents,

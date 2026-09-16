@@ -15,6 +15,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 
 import { createMcpServer } from "@/lib/mcp/server";
 import { McpAuthError, validateBearerToken } from "@/lib/mcp/auth";
+import { getEntitlementUsage } from "@/lib/billing/entitlements";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -45,6 +46,13 @@ async function handle(req: NextRequest): Promise<Response> {
     }
     const msg = err instanceof Error ? err.message : "auth_failed";
     return jsonRpcError(-32603, msg, 500);
+  }
+
+  // O token pode ser válido, mas a organização ainda precisa ter MCP incluso
+  // no plano efetivo. A regra é fail-closed para planos futuros sem esse recurso.
+  const entitlement = await getEntitlementUsage(auth.organizationId);
+  if (!entitlement?.limits.mcp) {
+    return jsonRpcError(-32002, "MCP is not included in this organization plan.", 403);
   }
 
   const transport = new WebStandardStreamableHTTPServerTransport({});
