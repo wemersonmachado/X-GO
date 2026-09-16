@@ -9,6 +9,7 @@ describe("CSP de runtime", () => {
     expect(csp.split(";").find((s) => s.trim().startsWith("script-src"))).not.toContain("'unsafe-inline'");
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("form-action 'self' https://checkout.stripe.com");
     expect(csp).toContain("wss://example.supabase.co");
   });
   it("mantém instalação HTTP local e não força HTTPS em todos os subdomínios", () => {

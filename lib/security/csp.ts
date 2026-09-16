@@ -19,7 +19,7 @@ export function contentSecurityPolicy(nonce: string, supabaseUrl: string, produc
     "frame-src 'self' blob: https://challenges.cloudflare.com",
     "object-src 'none'",
     "base-uri 'self'",
-    "form-action 'self'",
+    "form-action 'self' https://checkout.stripe.com",
     "frame-ancestors 'none'",
   ].join("; ");
 }
