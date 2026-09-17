@@ -25273,14 +25273,17 @@ grant execute on function public.fn_apply_paid_stripe_plan_bundle(text,text,text
 -- O baseline é o instalador do self-host. Estas definições são derivadas da
 -- última versão da migration para não haver comportamento diferente entre
 -- instalação fresca e atualização pela cadeia.
-+create or replace function public.fn_sync_plan_entitlement_from_subscription() returns trigger language plpgsql security definer set search_path = '' as $$
+
+create or replace function public.fn_sync_plan_entitlement_from_subscription() returns trigger language plpgsql security definer set search_path = '' as $$
 begin
   insert into public.organization_plan_entitlements(organization_id,plan_slug,source,status,effective_at,updated_at)
   values(new.organization_id,new.plan_slug,case when new.provider='stripe' then 'stripe' else 'manual' end,
     case when new.status in ('active','trialing') then 'active' else 'suspended' end,now(),now())
   on conflict(organization_id) do update set plan_slug=excluded.plan_slug,source=excluded.source,status=excluded.status,updated_at=now();
   return new;
-end; $$;\n\ncreate or replace function public.fn_create_tenant_with_owner(
+end; $$;
+
+create or replace function public.fn_create_tenant_with_owner(
   p_actor uuid, p_key uuid, p_request jsonb, p_hash text
 ) returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
 declare prior public.idempotency_keys%rowtype; org public.organizations%rowtype; result jsonb;
@@ -25302,25 +25305,35 @@ begin
   result:=jsonb_build_object('id',org.id,'slug',org.slug,'display_name',org.display_name,'invite_id',gen_random_uuid(),'issued_at',floor(extract(epoch from now()))::bigint);
   insert into public.idempotency_keys(organization_id,key,endpoint,request_hash,status_code,response_body,tenant_creation_trusted) values(org.id,p_key::text,'/api/v1/admin/tenants:'||p_actor::text,decode(p_hash,'hex'),201,result,true);
   return result||jsonb_build_object('created',true);
-end; $$;\n\ncreate or replace function public.fn_enforce_plan_user_capacity() returns trigger language plpgsql security definer set search_path = '' as $$
+end; $$;
+
+create or replace function public.fn_enforce_plan_user_capacity() returns trigger language plpgsql security definer set search_path = '' as $$
 begin
  if new.accepted_at is not null and new.revoked_at is null
     and (tg_op='INSERT' or (tg_op='UPDATE' and (old.accepted_at is null or old.revoked_at is not null))) then perform public.fn_assert_plan_capacity(new.organization_id,'users'); end if;
  return new;
-end; $$;\n\ncreate or replace function public.fn_enforce_plan_channel_capacity() returns trigger language plpgsql security definer set search_path = '' as $$
+end; $$;
+
+create or replace function public.fn_enforce_plan_channel_capacity() returns trigger language plpgsql security definer set search_path = '' as $$
 begin
  if new.archived_at is null and (tg_op='INSERT' or (tg_op='UPDATE' and old.archived_at is not null)) then perform public.fn_assert_plan_capacity(new.organization_id,'whatsapp'); end if;
  return new;
-end; $$;\n\ncreate or replace function public.fn_enforce_plan_agent_capacity() returns trigger language plpgsql security definer set search_path = '' as $$
+end; $$;
+
+create or replace function public.fn_enforce_plan_agent_capacity() returns trigger language plpgsql security definer set search_path = '' as $$
 begin
  if new.published_version_id is not null and new.archived_at is null and new.is_active and new.paused_at is null
     and (tg_op='INSERT' or (tg_op='UPDATE' and (old.published_version_id is null or old.archived_at is not null or not old.is_active or old.paused_at is not null))) then perform public.fn_assert_plan_capacity(new.organization_id,'active_agents'); end if;
  return new;
-end; $$;\n\ncreate or replace function public.fn_enforce_plan_conversation_capacity() returns trigger language plpgsql security definer set search_path = '' as $$
+end; $$;
+
+create or replace function public.fn_enforce_plan_conversation_capacity() returns trigger language plpgsql security definer set search_path = '' as $$
 begin
  if new.is_dry_run=false and new.conversation_id is not null then perform public.fn_assert_plan_capacity(new.organization_id,'monthly_conversations',new.conversation_id); end if;
  return new;
-end; $$;\n\ncreate or replace function public.fn_apply_paid_stripe_addon(
+end; $$;
+
+create or replace function public.fn_apply_paid_stripe_addon(
   p_checkout_session_id text,p_payment_id text,p_subscription_id text,p_checkout_intent_id uuid,p_value_cents integer
 ) returns jsonb language plpgsql security definer set search_path = '' as $$
 declare v_intent public.platform_checkout_intents%rowtype; v_addon public.platform_billing_addons%rowtype;
@@ -25336,7 +25349,9 @@ begin
   on conflict(provider_subscription_id) do update set provider_payment_id=excluded.provider_payment_id,status='active',updated_at=now();
   update public.platform_checkout_intents set status='paid',last_error=null,updated_at=now() where id=v_intent.id;
   return jsonb_build_object('eligible',true,'organization_id',v_intent.organization_id,'addon_slug',v_intent.addon_slug,'quantity',v_intent.quantity);
-end; $$;\n\ncreate or replace function public.fn_sync_stripe_addon(p_event_type text,p_subscription_id text,p_payment_id text,p_status text,p_current_period_end timestamptz) returns jsonb
+end; $$;
+
+create or replace function public.fn_sync_stripe_addon(p_event_type text,p_subscription_id text,p_payment_id text,p_status text,p_current_period_end timestamptz) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare v_status text;
 begin
@@ -25345,7 +25360,9 @@ begin
   update public.organization_addon_subscriptions set status=v_status,provider_payment_id=coalesce(nullif(p_payment_id,''),provider_payment_id),current_period_end=coalesce(p_current_period_end,current_period_end),updated_at=now()
    where provider='stripe' and provider_subscription_id=p_subscription_id;
   return jsonb_build_object('matched',found,'status',v_status);
-end; $$;\n\ncreate or replace function public.fn_sync_stripe_subscription(
+end; $$;
+
+create or replace function public.fn_sync_stripe_subscription(
   p_event_type text, p_subscription_id text, p_customer_id text, p_payment_id text,
   p_status text, p_current_period_end timestamptz
 ) returns jsonb language plpgsql security definer set search_path = '' as $$
@@ -25366,6 +25383,3 @@ begin
   elsif v_next in ('active','trialing') then update public.organizations set status='active',suspended_at=null,suspended_by=null,suspended_reason=null,updated_at=now() where id=v_sub.organization_id and status='suspended' and suspended_reason like 'billing:%'; if found then v_org_action:='reactivated'; end if; end if;
   return jsonb_build_object('matched',true,'organization_id',v_sub.organization_id,'previous_status',v_previous,'status',v_next,'organization_action',v_org_action);
 end; $$;
-
-notify pgrst,'reload schema';
--- END 0249 planos, alertas, creditos e anual

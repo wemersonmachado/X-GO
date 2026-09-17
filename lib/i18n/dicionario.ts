@@ -4091,7 +4091,6 @@ export const DICIONARIO: Traducoes = {
   Copiado: { es: "Copiado" },
   // ─── Configurações: Billing ───
   "Planos, faturas e cobrança.": { es: "Planes, facturas y cobros." },
-  "Para questões de pagamento, fale com quem administra este sistema.": { es: "Para cuestiones de pago, habla con quien administra este sistema." },
   "Esta organização não possui uma assinatura Stripe vinculada. Para uma nova contratação, escolha um plano na página inicial; o pagamento cria uma nova organização com acesso por e-mail.": { es: "Esta organización no tiene una suscripción de Stripe vinculada. Para una nueva contratación, elige un plan en la página inicial; el pago crea una nueva organización con acceso por correo electrónico." },
   "Capacidade e consumo": { es: "Capacidad y consumo" },
   "Respostas de IA consomem franquia; mensagens humanas e recebidas não são bloqueadas.": { es: "Las respuestas de IA consumen la franquicia; los mensajes humanos y recibidos no se bloquean." },
