@@ -75,6 +75,18 @@ interface Excecao {
  * linhas da OUTRA organização, não uma leitura como superusuário.
  */
 const PROVA_PROPRIA: readonly Excecao[] = [
+  ...[
+    "organization_addon_subscriptions",
+    "organization_ai_credit_balances",
+    "organization_ai_credit_ledger",
+    "organization_billing_preferences",
+    "organization_plan_entitlements",
+    "organization_usage_overages",
+    "platform_checkout_intents",
+  ].map((tabela) => ({
+    tabela,
+    razao: "tests/invariants/billing-access-rls.test.ts — tabelas de billing são server-only: anon e authenticated não têm privilégio e recebem permission denied; service_role mantém apenas o processamento do webhook.",
+  })),
   { tabela: "finance_entries", razao: "tests/invariants/financeiro-rls.test.ts — dois tenants reais; manager da org A lê a própria linha e conta zero linhas da org B sob JWT authenticated; escrita direta negada" },
   ...["finance_categories", "finance_cost_centers", "finance_accounts", "finance_agent_permissions",
     "finance_proposals", "finance_documents", "finance_chart_accounts", "finance_import_batches",

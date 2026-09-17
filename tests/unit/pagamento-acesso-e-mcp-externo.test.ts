@@ -48,7 +48,7 @@ describe("pagamento confirmado e conexão externa", () => {
     const route = readFileSync("app/api/v1/webhooks/stripe/route.ts", "utf8");
     expect(route).toContain('"checkout.session.completed"');
     expect(route).toContain("verifyStripeSignature");
-    expect(route).toContain("fn_provision_paid_checkout");
+    expect(route).toContain("fn_apply_paid_stripe_plan_bundle");
     expect(route).toContain("sendPaidAccess");
     expect(route).toContain("fn_finish_stripe_event");
     expect(route).toContain("fn_sync_stripe_subscription");

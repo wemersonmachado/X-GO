@@ -12,6 +12,12 @@ const TABELAS = [
   "platform_checkout_access",
   "platform_checkout_intents",
   "platform_subscription_payments",
+  "organization_addon_subscriptions",
+  "organization_ai_credit_balances",
+  "organization_ai_credit_ledger",
+  "organization_billing_preferences",
+  "organization_plan_entitlements",
+  "organization_usage_overages",
 ] as const;
 
 function privileges(role: string, table: string): string {

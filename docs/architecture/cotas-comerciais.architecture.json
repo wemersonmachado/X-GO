@@ -1,16 +1,34 @@
 {
-  "name": "cotas-comerciais-stripe",
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Cotas comerciais e cobrança Stripe",
+    "subtitle": "O catálogo define preço; o checkout congela a intenção; o webhook concede capacidade; o runtime a aplica.",
+    "output": "cotas-comerciais.html",
+    "quality_profile": "standard"
+  },
+  "lanes": [
+    { "id": "catalogo", "label": "Catálogo controlado" },
+    { "id": "pagamento", "label": "Checkout e confirmação" },
+    { "id": "capacidade", "label": "Entitlements server-side" },
+    { "id": "operacao", "label": "Produto e pessoa administradora" }
+  ],
+  "mainPath": ["catalog", "checkout", "webhook", "entitlements", "runtime", "billing-ui"],
   "nodes": [
-    { "id": "catalog", "kind": "database", "label": "Planos e adicionais" },
-    { "id": "checkout", "kind": "api", "label": "Checkout Stripe" },
-    { "id": "webhook", "kind": "api", "label": "Webhook Stripe" },
-    { "id": "entitlements", "kind": "database", "label": "Entitlements e cotas" },
-    { "id": "runtime", "kind": "worker", "label": "Agentes e conversas" },
-    { "id": "billing-ui", "kind": "ui", "label": "Plano e cobrança" }
+    { "id": "catalog", "lane": "catalogo", "col": 0, "type": "database", "label": "Planos e adicionais", "sublabel": "Preços e limites administrados pela plataforma." },
+    { "id": "checkout", "lane": "pagamento", "col": 1, "type": "api", "label": "Checkout Stripe", "sublabel": "Intenção idempotente com preço congelado." },
+    { "id": "webhook", "lane": "pagamento", "col": 2, "type": "api", "label": "Webhook Stripe", "sublabel": "Assinatura verificada e evento reconciliado." },
+    { "id": "entitlements", "lane": "capacidade", "col": 3, "type": "database", "label": "Entitlements e cotas", "sublabel": "A capacidade só muda após confirmação financeira." },
+    { "id": "runtime", "lane": "operacao", "col": 4, "type": "service", "label": "Agentes e conversas", "sublabel": "Gatilhos de banco impõem usuários, canais, agentes e IA." },
+    { "id": "billing-ui", "lane": "operacao", "col": 4, "type": "frontend", "label": "Plano e cobrança", "sublabel": "Mostra uso, alertas e compra de capacidade." }
   ],
   "edges": [
-    ["catalog", "checkout"], ["checkout", "webhook"], ["webhook", "entitlements"],
-    ["entitlements", "runtime"], ["entitlements", "billing-ui"], ["billing-ui", "checkout"]
+    { "id": "catalog-checkout", "from": "catalog", "to": "checkout", "label": "preço e limites" },
+    { "id": "checkout-webhook", "from": "checkout", "to": "webhook", "label": "evento assinado" },
+    { "id": "webhook-entitlements", "from": "webhook", "to": "entitlements", "label": "liberação atômica" },
+    { "id": "entitlements-runtime", "from": "entitlements", "to": "runtime", "label": "capacidade aplicada" },
+    { "id": "entitlements-ui", "from": "entitlements", "to": "billing-ui", "label": "uso e limites" },
+    { "id": "ui-checkout", "from": "billing-ui", "to": "checkout", "label": "nova contratação" }
   ],
-  "feedback_loop": "Uso é visível em Billing; ao atingir a cota, o banco impede nova automação ou ativação e o usuário compra adicional para liberar capacidade."
+  "feedback_loop": "Uso é visível em Billing; ao atingir a cota, o banco impede nova automação ou ativação e a pessoa administradora compra adicional para liberar capacidade."
 }
