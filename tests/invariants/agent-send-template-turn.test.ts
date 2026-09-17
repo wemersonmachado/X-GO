@@ -225,6 +225,12 @@ beforeAll(async () => {
     [ORG],
   );
   await pool.query(
+    `insert into organization_plan_entitlements (organization_id, plan_slug, source, status)
+     values ($1, 'enterprise', 'manual', 'active')
+     on conflict (organization_id) do update set plan_slug = excluded.plan_slug, source = excluded.source, status = excluded.status, updated_at = now()`,
+    [ORG],
+  );
+  await pool.query(
     `insert into contacts (id, organization_id, name, phone_number)
      values ($1,$2,'Lead Template','+5511900000777') on conflict (id) do nothing`,
     [CONTACT, ORG],

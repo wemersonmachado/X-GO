@@ -71,6 +71,14 @@ function semear(): void {
       ('${ORG_ARQ}', 'eng-arq', 'Engine Arquivado', 'Eng Arq')
       on conflict do nothing;
 
+    insert into public.organization_plan_entitlements (organization_id, plan_slug, source, status)
+    values
+      ('${ORG_PUB}', 'enterprise', 'manual', 'active'),
+      ('${ORG_SEM}', 'enterprise', 'manual', 'active'),
+      ('${ORG_ARQ}', 'enterprise', 'manual', 'active')
+    on conflict (organization_id) do update
+      set plan_slug = excluded.plan_slug, source = excluded.source, status = excluded.status, updated_at = now();
+
     insert into public.ai_agents (id, organization_id, name, system_prompt, is_active)
       values
         ('eeee1111-0000-4000-8000-000000000001', '${ORG_PUB}', 'Publicado', 'p', true),

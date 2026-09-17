@@ -1,20 +1,33 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { useT } from "@/hooks/i18n/useT";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { showApiError } from "@/components/feedback/ApiErrorToast";
 import { useClaimConversation } from "@/hooks/inbox/useClaimConversation";
 import { useAtRiskLeads, type AtRiskLead } from "@/hooks/leads/useAtRiskLeads";
+import { apiClient } from "@/lib/api/client";
 import type { RiskBucket } from "@/lib/leads/risk-radar";
 import {
   ArrowRight,
   CheckCircle,
   ClockCountdown,
   PaperPlaneTilt,
+  Trash,
   Warning,
 } from "@/lib/ui/icons";
 
@@ -138,6 +151,32 @@ function RadarRow({ lead }: { lead: AtRiskLead }) {
 
   const claim = useClaimConversation();
   const qc = useQueryClient();
+  const [alvoExclusao, setAlvoExclusao] = useState<"lead" | "contact" | null>(null);
+  const excluir = useMutation({
+    mutationFn: async (alvo: "lead" | "contact") => {
+      if (alvo === "lead") {
+        await apiClient.post("/api/v1/leads/bulk", {
+          action: "delete",
+          lead_ids: [lead.id],
+          params: {},
+        });
+        return;
+      }
+      if (!lead.contact_id) throw new Error("contact_id_missing");
+      await apiClient.post("/api/v1/contacts/bulk-delete", {
+        scope: "selected",
+        contact_ids: [lead.contact_id],
+      });
+    },
+    onSuccess: (_resultado, alvo) => {
+      setAlvoExclusao(null);
+      qc.invalidateQueries({ queryKey: ["leads-at-risk"] });
+      qc.invalidateQueries({ queryKey: ["board", lead.pipeline_id] });
+      qc.invalidateQueries({ queryKey: ["contacts"] });
+      toast.success(alvo === "lead" ? t("Lead excluído definitivamente.") : t("Contato excluído."));
+    },
+    onError: showApiError,
+  });
 
   // Dono do NEGÓCIO — humano OU agente (0070). Antes desta linha o radar lia só
   // `owner_user_id`, então um lead que a IA trabalha há dezenas de turnos aparecia
@@ -221,8 +260,55 @@ function RadarRow({ lead }: { lead: AtRiskLead }) {
             {t("Assumir")}
           </Button>
         ) : null}
+        {lead.contact_id ? (
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-error-fg hover:text-error-fg"
+            onClick={() => setAlvoExclusao("contact")}
+            data-testid="radar-delete-contact"
+          >
+            <Trash size={14} aria-hidden />
+            {t("Excluir contato")}
+          </Button>
+        ) : null}
+        <Button
+          size="sm"
+          variant="outline"
+          className="text-error-fg hover:text-error-fg"
+          onClick={() => setAlvoExclusao("lead")}
+          data-testid="radar-delete-lead"
+        >
+          <Trash size={14} aria-hidden />
+          {t("Excluir lead")}
+        </Button>
         <ArrowRight size={16} className="text-muted-foreground" aria-hidden />
       </div>
+
+      <AlertDialog open={alvoExclusao !== null} onOpenChange={(open) => !open && setAlvoExclusao(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {alvoExclusao === "contact" ? t("Excluir contato?") : t("Excluir lead definitivamente?")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {alvoExclusao === "contact"
+                ? t("Isso remove o contato, suas mensagens e conversas associadas. Esta ação não pode ser desfeita.")
+                : t("Isso remove o lead do Radar e do funil. Esta ação não pode ser desfeita.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={excluir.isPending}>{t("Cancelar")}</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              onClick={() => alvoExclusao && excluir.mutate(alvoExclusao)}
+              disabled={excluir.isPending}
+            >
+              {excluir.isPending ? t("Excluindo…") : t("Excluir definitivamente")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </li>
   );
 }

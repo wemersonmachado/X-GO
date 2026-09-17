@@ -6594,6 +6594,7 @@ export const DICIONARIO: Traducoes = {
   "Campos do funil": { es: "Campos del embudo" },
   "Chave do campo": { es: "Clave del campo" },
   "Contato excluído.": { es: "Contacto eliminado." },
+  "Lead excluído definitivamente.": { es: "Lead eliminado definitivamente." },
   "Disparado por uma automação em Webhooks": { es: "Disparado por una automatización en Webhooks" },
   "Email ainda não está disponível. In-app (toast) e Push (Chrome) já funcionam para as cinco categorias.": {
     es: "Email aún no está disponible. In-app (toast) y Push (Chrome) ya funcionan para las cinco categorías.",
@@ -6601,11 +6602,19 @@ export const DICIONARIO: Traducoes = {
   "Excluindo…": { es: "Eliminando…" },
   "Excluir contato": { es: "Eliminar contacto" },
   "Excluir contato?": { es: "¿Eliminar contacto?" },
+  "Excluir lead": { es: "Eliminar lead" },
+  "Excluir lead definitivamente?": { es: "¿Eliminar lead definitivamente?" },
   "Fluxo de follow-up": { es: "Flujo de follow-up" },
   "Fluxo excluído.": { es: "Flujo eliminado." },
   "Iniciar conversa com": { es: "Iniciar conversación con" },
   "Iniciar conversa no Inbox": { es: "Iniciar conversación en el Inbox" },
   "Isso remove": { es: "Esto elimina" },
+  "Isso remove o contato, suas mensagens e conversas associadas. Esta ação não pode ser desfeita.": {
+    es: "Esto elimina el contacto, sus mensajes y conversaciones asociadas. Esta acción no se puede deshacer.",
+  },
+  "Isso remove o lead do Radar e do funil. Esta ação não pode ser desfeita.": {
+    es: "Esto elimina el lead del Radar y del embudo. Esta acción no se puede deshacer.",
+  },
   "Novo campo": { es: "Nuevo campo" },
   "Opções do campo": { es: "Opciones del campo" },
   "Remover campo": { es: "Quitar campo" },

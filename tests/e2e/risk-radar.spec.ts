@@ -65,6 +65,14 @@ test("o atendente vê no Radar a demanda aberta que esfriou sem próximo passo",
   await expect(item).toHaveAttribute("data-risk", "critico");
   await expect(item.getByText("Crítico")).toBeVisible();
   await expect(item.getByText(/Sem próximo passo/)).toBeVisible();
+  // A saída do Radar é explícita: não obriga a pessoa a caçar o card no
+  // funil para encerrar o que ficou obsoleto. A confirmação é testada na tela
+  // sem apagar o fixture que o cenário seguinte ainda usa.
+  await expect(item.getByTestId("radar-delete-lead")).toBeVisible();
+  await expect(item.getByTestId("radar-delete-contact")).toBeVisible();
+  await item.getByTestId("radar-delete-lead").click();
+  await expect(page.getByRole("dialog")).toContainText("Excluir lead definitivamente?");
+  await page.getByRole("button", { name: "Cancelar" }).click();
 });
 
 test("o atendente assume a demanda direto do Radar e vira o responsável", async ({ page }) => {

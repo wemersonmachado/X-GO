@@ -168,6 +168,12 @@ beforeAll(async () => {
     [ORG],
   );
   await pool.query(
+    `insert into organization_plan_entitlements (organization_id, plan_slug, source, status)
+     values ($1, 'enterprise', 'manual', 'active')
+     on conflict (organization_id) do update set plan_slug = excluded.plan_slug, source = excluded.source, status = excluded.status, updated_at = now()`,
+    [ORG],
+  );
+  await pool.query(
     `insert into channel_sessions (id, organization_id, waha_session_name, status, webhook_secret_encrypted)
      values ($1, $2, 'operador-handoff-session', 'WORKING', '\\x00'::bytea)
      on conflict (id) do nothing`,
