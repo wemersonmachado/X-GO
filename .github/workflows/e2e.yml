@@ -664,8 +664,16 @@ jobs:
 
       - name: Aplicar o baseline.sql (o mesmo que o install.sh do kit aplica)
         run: |
+          set +e
           psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
-            -v ON_ERROR_STOP=1 -q -f supabase/baseline.sql
+            -v ON_ERROR_STOP=1 -q -f supabase/baseline.sql 2>&1 | tee /tmp/baseline.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            resumo=$(tail -20 /tmp/baseline.log | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g; s/\n/%0A/g')
+            echo "::error title=Baseline SQL falhou::$resumo"
+            exit "$status"
+          fi
 
       # ⚠️ O REALTIME PRECISA REINICIAR DEPOIS DO BASELINE — senão ele assina e
       # não entrega, em silêncio.
