@@ -24986,6 +24986,58 @@ create or replace function public.fn_sync_stripe_subscription(p_event_type text,
 notify pgrst,'reload schema';
 
 
+-- BEGIN 0248 planos, cesta Stripe e uso de IA
+-- Uma contratação pode conter plano-base e adicionais no MESMO ciclo Stripe.
+-- O navegador só manda quantidade; preço, catálogo e o total são congelados aqui.
+
+alter table public.platform_checkout_intents
+  add column if not exists total_price_cents integer,
+  add column if not exists addons_snapshot jsonb not null default '[]'::jsonb;
+
+update public.platform_checkout_intents
+set total_price_cents = price_cents
+where total_price_cents is null;
+
+alter table public.platform_checkout_intents
+  alter column total_price_cents set not null;
+
+alter table public.platform_checkout_intents
+  drop constraint if exists platform_checkout_intents_total_price_cents_check;
+alter table public.platform_checkout_intents
+  add constraint platform_checkout_intents_total_price_cents_check check (total_price_cents >= price_cents);
+
+-- Um checkout de cesta gera uma assinatura Stripe só: plano e cada adicional
+-- compartilham provider_subscription_id, mas permanecem linhas separadas.
+alter table public.organization_addon_subscriptions
+  drop constraint if exists organization_addon_subscriptions_provider_subscription_id_key;
+create unique index if not exists organization_addon_subscriptions_subscription_addon_key
+  on public.organization_addon_subscriptions(organization_id, provider_subscription_id, addon_slug);
+
+-- A franquia mede respostas reais da IA (llm_calls), e não contatos distintos.
+update public.platform_billing_plans set limits = case slug
+  when 'standard' then '{"users":3,"whatsapp":1,"active_agents":3,"monthly_conversations":3000,"mcp":true}'::jsonb
+  when 'pro' then '{"users":10,"whatsapp":3,"active_agents":10,"monthly_conversations":15000,"mcp":true}'::jsonb
+  when 'enterprise' then '{"users":20,"whatsapp":20,"active_agents":25,"monthly_conversations":50000,"mcp":true,"priority_support":true,"customization":true}'::jsonb
+  else limits end;
+
+create or replace function public.fn_enforce_plan_ai_response_capacity() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  if new.purpose = 'agent_turn' then
+    perform public.fn_assert_plan_capacity(new.organization_id, 'monthly_conversations', null);
+  end if;
+  return new;
+end; $$;
+revoke all on function public.fn_enforce_plan_ai_response_capacity() from public, anon, authenticated;
+
+drop trigger if exists trg_plan_conversation_capacity on public.ai_agent_runs;
+drop trigger if exists trg_plan_ai_response_capacity on public.llm_calls;
+create trigger trg_plan_ai_response_capacity before insert on public.llm_calls
+  for each row execute function public.fn_enforce_plan_ai_response_capacity();
+
+notify pgrst, 'reload schema';
+-- END 0248 planos, cesta Stripe e uso de IA
+
 -- BEGIN 0249 planos, alertas, creditos e anual
 -- Política comercial controlada pelo superadmin, planos anuais, trial e
 -- créditos pré-pagos. Todas as tabelas são server-only: nenhum catálogo de
