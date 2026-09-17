@@ -176,7 +176,7 @@ export async function LandingPage() {
               <p className={styles.planLabel}>{index === 1 ? "MAIS POSSIBILIDADES" : "SEU PRÓXIMO PASSO"}</p>
               <h3>{plan.name}</h3><p>{plan.description}</p>
               <ul>{plan.features.map((feature, i) => <li key={i}><span>✓</span>{feature}</li>)}</ul>
-              <PlanConfigurator plan={plan} addons={config.addons} billing={config.billing} nextPlan={index < config.plans.length - 1 ? config.plans[index + 1] : null} />
+              <PlanConfigurator plan={plan} addons={config.addons} billing={config.billing} nextPlan={index < config.plans.length - 1 ? (config.plans[index + 1] ?? null) : null} />
             </article>
           ))}
         </div>
