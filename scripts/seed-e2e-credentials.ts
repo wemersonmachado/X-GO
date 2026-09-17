@@ -145,6 +145,30 @@ async function ensureOrg(): Promise<string> {
   return orgId;
 }
 
+/**
+ * A organização-base da suíte tem cinco perfis permanentes (incluindo o dono
+ * da plataforma). O plano Standard possui três assentos, portanto o próprio
+ * seed declara a capacidade de teste antes de criar memberships. Isso mantém
+ * a trava comercial ativa: somente este ambiente de teste usa o entitlement
+ * manual Pro, gravado pelo service role.
+ */
+async function ensureTestPlanEntitlement(orgId: string): Promise<void> {
+  const { error } = await admin
+    .from("organization_plan_entitlements")
+    .upsert(
+      {
+        organization_id: orgId,
+        plan_slug: "pro",
+        source: "manual",
+        status: "active",
+        updated_at: new Date().toISOString(),
+      } as never,
+      { onConflict: "organization_id" },
+    );
+  if (error) throw new Error(`test plan entitlement: ${error.message}`);
+  console.log("[seed] plan entitlement: pro");
+}
+
 async function ensureUser(email: string, full_name: string): Promise<string> {
   // listUsers paginado — perPage default 50; nosso pool é pequeno
   const { data: list } = await admin.auth.admin.listUsers({ perPage: 200 });
@@ -327,6 +351,7 @@ async function garantirTotp(
 
 async function main(): Promise<void> {
   const orgId = await ensureOrg();
+  await ensureTestPlanEntitlement(orgId);
 
   const users: Record<string, { id: string; email: string; role: string }> = {};
   for (const u of USERS) {
