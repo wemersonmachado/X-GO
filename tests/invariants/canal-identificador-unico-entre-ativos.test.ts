@@ -28,6 +28,10 @@ function novaOrg(slug: string): string {
   sql(`
     insert into public.organizations (slug, legal_name, display_name)
     values ('${slug}', 'inv 0165', 'inv 0165');
+    insert into public.organization_plan_entitlements (organization_id, plan_slug, source, status)
+    select id, 'enterprise', 'manual', 'active' from public.organizations where slug = '${slug}'
+    on conflict (organization_id) do update
+      set plan_slug = excluded.plan_slug, source = excluded.source, status = excluded.status, updated_at = now();
   `);
   return sql(`select id from public.organizations where slug = '${slug}'`).trim();
 }

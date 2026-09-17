@@ -164,12 +164,12 @@ export function seedGov(): void {
     insert into public.organizations (id, slug, legal_name, display_name)
       values ('${GOV_ORG}', 'gov-inv', 'Gov Invariant Org', 'Gov Inv')
       on conflict do nothing;
-    -- O fixture possui cinco membros permanentes. Declara Pro antes dos
-    -- memberships para exercitar os guards de capacidade sem enfraquecer o
-    -- Standard que o produto entrega a clientes reais.
+    -- O fixture reúne cenários independentes de canais no mesmo tenant ao
+    -- longo da suíte. Declara Enterprise antes dos memberships para testar
+    -- roteamento, não para afrouxar a cota Standard entregue ao cliente.
     insert into public.organization_plan_entitlements
       (organization_id, plan_slug, source, status)
-      values ('${GOV_ORG}', 'pro', 'manual', 'active')
+      values ('${GOV_ORG}', 'enterprise', 'manual', 'active')
       on conflict (organization_id) do update
         set plan_slug = excluded.plan_slug, source = excluded.source,
             status = excluded.status, updated_at = now();

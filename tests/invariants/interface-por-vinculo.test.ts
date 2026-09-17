@@ -42,14 +42,14 @@ describe("interface por vínculo no banco aplicado", () => {
   it("criação do próprio responsável aplica interface sem alterar confiança do recibo", () => prove(`
     insert into public.platform_admins(user_id,granted_by,scope,mfa_required,reason) values ('${admin}','${admin}','full',false,'Local fixture');
     do $$ declare r jsonb; begin
-      r := public.fn_create_tenant_with_owner('${admin}','${b}','{"display_name":"Nova","slug":"nova221","owner_email":"admin221@local.test","owner_interface_settings":{"preset":"simplificada"}}','abcd');
+      r := public.fn_create_tenant_with_owner('${admin}','${b}','{"display_name":"Nova","slug":"nova221","owner_email":"admin221@local.test","plan":"standard","owner_interface_settings":{"preset":"simplificada"}}','abcd');
       if (select interface_settings->>'preset' from public.user_organizations where organization_id=(r->>'id')::uuid and user_id='${admin}')<>'simplificada' then raise exception 'owner interface lost'; end if;
       if not exists(select 1 from public.idempotency_keys where organization_id=(r->>'id')::uuid and tenant_creation_trusted) then raise exception 'untrusted'; end if;
     end $$;`));
   it("criação para outro responsável aplica o perfil ao criador e à organização", () => prove(`
     insert into public.platform_admins(user_id,granted_by,scope,mfa_required,reason) values ('${admin}','${admin}','full',false,'Local fixture');
     do $$ declare r jsonb; begin
-      r := public.fn_create_tenant_with_owner('${admin}','${b}','{"display_name":"Convidada","slug":"convidada232","owner_email":"outra@local.test","owner_interface_settings":{"preset":"simplificada"}}','abcd');
+      r := public.fn_create_tenant_with_owner('${admin}','${b}','{"display_name":"Convidada","slug":"convidada232","owner_email":"outra@local.test","plan":"standard","owner_interface_settings":{"preset":"simplificada"}}','abcd');
       if (select interface_settings->>'preset' from public.user_organizations where organization_id=(r->>'id')::uuid and user_id='${admin}') <> 'simplificada' then raise exception 'creator profile lost'; end if;
       if (select settings->'interface_default'->>'preset' from public.organizations where id=(r->>'id')::uuid) <> 'simplificada' then raise exception 'organization default lost'; end if;
     end $$;`));

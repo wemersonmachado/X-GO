@@ -206,6 +206,14 @@ async function seedOrg(org: string): Promise<void> {
     `insert into organizations (id, slug, legal_name, display_name) values ($1, $2, $3, $4) on conflict (id) do nothing`,
     [org, name, name, name],
   );
+  // Cada cenário cria sua própria sessão de canal. A suíte mede silêncio e
+  // follow-up, não a franquia comercial; use uma cota explícita e ampla.
+  await pool.query(
+    `insert into organization_plan_entitlements (organization_id, plan_slug, source, status)
+     values ($1, 'enterprise', 'manual', 'active')
+     on conflict (organization_id) do update set plan_slug = excluded.plan_slug, source = excluded.source, status = excluded.status, updated_at = now()`,
+    [org],
+  );
 }
 
 async function seedContact(org: string, opts?: { tags?: string[]; isBlocked?: boolean }): Promise<string> {
