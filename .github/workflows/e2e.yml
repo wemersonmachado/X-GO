@@ -794,7 +794,15 @@ jobs:
       - name: Semear credenciais de teste
         run: |
           cp .env.e2e .env.local
-          pnpm exec tsx scripts/seed-e2e-credentials.ts
+          set +e
+          pnpm exec tsx scripts/seed-e2e-credentials.ts 2>&1 | tee /tmp/e2e-credentials-seed.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            resumo=$(tail -30 /tmp/e2e-credentials-seed.log | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g; s/\n/%0A/g')
+            echo "::error title=Seed de credenciais E2E falhou::$resumo"
+            exit "$status"
+          fi
 
       # `SUPABASE_DB_URL` no `.env.local` (e não só no `env:` do passo de teste):
       # `seed-e2e-escalacao.ts` abre um `pg.Pool` direto, e o `.env.local` é a
