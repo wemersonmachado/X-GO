@@ -7,6 +7,8 @@ export type BillingResource = "users" | "whatsapp" | "active_agents" | "monthly_
 export interface Entitlements {
   plan_slug: "standard" | "pro" | "enterprise";
   limits: Record<BillingResource, number> & { mcp: boolean };
+  capabilities: string[];
+  prepaid_ai_credits: number;
 }
 
 export interface EntitlementUsage extends Entitlements {
@@ -23,7 +25,7 @@ export async function getEntitlementUsage(orgId: string): Promise<EntitlementUsa
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("fn_plan_entitlements" as never, { p_org: orgId } as never);
   if (error || !data || typeof data !== "object") return null;
-  const raw = data as { plan_slug?: unknown; limits?: unknown };
+  const raw = data as { plan_slug?: unknown; limits?: unknown; capabilities?: unknown; prepaid_ai_credits?: unknown };
   const plan = raw.plan_slug;
   if (plan !== "standard" && plan !== "pro" && plan !== "enterprise") return null;
   const limits = {
@@ -36,7 +38,10 @@ export async function getEntitlementUsage(orgId: string): Promise<EntitlementUsa
   const usageResult = await admin.rpc("fn_plan_usage" as never, { p_org: orgId } as never);
   if (usageResult.error || !usageResult.data || typeof usageResult.data !== "object") return null;
   const usageData = usageResult.data;
-  return { plan_slug: plan, limits, usage: {
+  return { plan_slug: plan, limits,
+    capabilities: Array.isArray(raw.capabilities) ? raw.capabilities.filter((item): item is string => typeof item === "string") : [],
+    prepaid_ai_credits: Number.isSafeInteger(Number(raw.prepaid_ai_credits)) ? Math.max(0, Number(raw.prepaid_ai_credits)) : 0,
+    usage: {
     users: numberAt(usageData, "users"),
     whatsapp: numberAt(usageData, "whatsapp"),
     active_agents: numberAt(usageData, "active_agents"),

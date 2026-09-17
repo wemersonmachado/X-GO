@@ -10,9 +10,13 @@ import { logger } from "@/lib/logger";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const slugSchema = z.enum(["standard", "pro", "enterprise"]);
-const formSchema = z.object({ intent_key: z.string().uuid() });
+const formSchema = z.object({ intent_key: z.string().uuid(), billing_interval: z.enum(["month", "year"]).default("month") });
 const ADDON_SLUGS = ["extra_user", "extra_whatsapp", "extra_active_agent", "extra_conversations_1000"] as const;
 type AddonSnapshot = { slug: typeof ADDON_SLUGS[number]; name: string; resource: string; units: number; price_cents: number; quantity: number; revision: number };
+
+function priceForInterval(monthlyCents: number, interval: "month" | "year", annualDiscountPercent: number): number {
+  return interval === "year" ? Math.round(monthlyCents * 12 * (100 - annualDiscountPercent) / 100) : monthlyCents;
+}
 
 function clientIp(request: Request): string | null {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
@@ -62,20 +66,22 @@ export async function POST(
   const admin = createAdminClient();
   const { data } = await admin
     .from("platform_billing_plans" as never)
-    .select("slug,name,price_cents,currency,active" as never)
+    .select("slug,name,price_cents,currency,active,annual_discount_percent,trial_days" as never)
     .eq("slug" as never, parsedSlug.data)
     .maybeSingle();
   const plan = data as unknown as
-    | { slug: string; name: string; price_cents: number; currency: string; active: boolean }
+    | { slug: string; name: string; price_cents: number; currency: string; active: boolean; annual_discount_percent: number; trial_days: number }
     | null;
   if (!plan) {
     return Response.redirect(`${base}/?checkout=indisponivel`, 303);
   }
   const intentId = parsedForm.data.intent_key;
+  const billingInterval = parsedForm.data.billing_interval;
+  const planPrice = priceForInterval(plan.price_cents, billingInterval, plan.annual_discount_percent);
   const quantities = Object.fromEntries(ADDON_SLUGS.map((slug) => [slug, z.coerce.number().int().min(0).max(100).safeParse(form.get(`addon_${slug}`)).data ?? 0])) as Record<typeof ADDON_SLUGS[number], number>;
   const { data: existingIntent, error: existingError } = await admin
     .from("platform_checkout_intents" as never)
-    .select("id,plan_slug,price_cents,currency,total_price_cents,addons_snapshot" as never)
+    .select("id,plan_slug,price_cents,currency,total_price_cents,addons_snapshot,billing_interval,trial_days" as never)
     .eq("id" as never, intentId)
     .maybeSingle();
   if (existingError) {
@@ -83,10 +89,10 @@ export async function POST(
     return Response.redirect(`${base}/?checkout=indisponivel`, 303);
   }
   const existing = existingIntent as unknown as
-    | { id: string; plan_slug: string; price_cents: number; currency: string; total_price_cents: number | null; addons_snapshot: AddonSnapshot[] | null }
+    | { id: string; plan_slug: string; price_cents: number; currency: string; total_price_cents: number | null; addons_snapshot: AddonSnapshot[] | null; billing_interval: "month" | "year"; trial_days: number }
     | null;
   let intentSnapshot = existing;
-  if (existing && existing.plan_slug !== plan.slug) {
+  if (existing && (existing.plan_slug !== plan.slug || existing.billing_interval !== billingInterval)) {
     return Response.redirect(`${base}/?checkout=requisicao_invalida`, 303);
   }
   if (!existing) {
@@ -96,25 +102,27 @@ export async function POST(
     if (catalogError) return Response.redirect(`${base}/?checkout=indisponivel`, 303);
     const addons = ((catalogData ?? []) as unknown as Array<{ slug: string; name: string; resource: string; units: number; price_cents: number; revision: number; active: boolean }>)
       .filter((addon): addon is typeof addon & { slug: typeof ADDON_SLUGS[number] } => ADDON_SLUGS.includes(addon.slug as typeof ADDON_SLUGS[number]) && addon.active && quantities[addon.slug as typeof ADDON_SLUGS[number]] > 0)
-      .map((addon) => ({ ...addon, quantity: quantities[addon.slug] }));
-    const totalPriceCents = plan.price_cents + addons.reduce((total, addon) => total + addon.price_cents * addon.quantity, 0);
+      .map((addon) => ({ ...addon, price_cents: priceForInterval(addon.price_cents, billingInterval, plan.annual_discount_percent), quantity: quantities[addon.slug] }));
+    const totalPriceCents = planPrice + addons.reduce((total, addon) => total + addon.price_cents * addon.quantity, 0);
     const { error: insertError } = await admin.from("platform_checkout_intents" as never).insert({
       id: intentId,
       plan_slug: plan.slug,
-      price_cents: plan.price_cents,
+      price_cents: planPrice,
       total_price_cents: totalPriceCents,
       addons_snapshot: addons,
       currency: plan.currency,
       status: "creating",
+      billing_interval: billingInterval,
+      trial_days: plan.trial_days,
     } as never);
     if (insertError) {
       const { data: racedIntent } = await admin
         .from("platform_checkout_intents" as never)
-        .select("plan_slug,price_cents,currency,total_price_cents,addons_snapshot" as never)
+        .select("plan_slug,price_cents,currency,total_price_cents,addons_snapshot,billing_interval,trial_days" as never)
         .eq("id" as never, intentId)
         .maybeSingle();
       const raced = racedIntent as unknown as
-        | { plan_slug: string; price_cents: number; currency: string; total_price_cents: number | null; addons_snapshot: AddonSnapshot[] | null }
+        | { plan_slug: string; price_cents: number; currency: string; total_price_cents: number | null; addons_snapshot: AddonSnapshot[] | null; billing_interval: "month" | "year"; trial_days: number }
         | null;
       if (!raced || raced.plan_slug !== plan.slug) {
         logger.error("[billing.stripe] falha ao persistir intenção de checkout", { plan: plan.slug });
@@ -128,15 +136,17 @@ export async function POST(
       intentSnapshot = {
         id: intentId,
         plan_slug: plan.slug,
-        price_cents: plan.price_cents,
+        price_cents: planPrice,
         currency: plan.currency,
         total_price_cents: totalPriceCents,
         addons_snapshot: addons,
+        billing_interval: billingInterval,
+        trial_days: plan.trial_days,
       };
     }
   }
 
-  const checkoutPrice = intentSnapshot?.price_cents ?? plan.price_cents;
+  const checkoutPrice = intentSnapshot?.price_cents ?? planPrice;
   const checkoutCurrency = intentSnapshot?.currency ?? plan.currency;
   const selectedAddons = Array.isArray(intentSnapshot?.addons_snapshot) ? intentSnapshot.addons_snapshot : [];
 
@@ -151,10 +161,12 @@ export async function POST(
       currency: checkoutCurrency,
       customerEmail: user?.email ?? null,
       clientReferenceId: userId,
-      metadata: { plan_slug: plan.slug, user_id: userId, checkout_intent_id: intentId, checkout_kind: "new_org" },
+      metadata: { plan_slug: plan.slug, user_id: userId, checkout_intent_id: intentId, checkout_kind: "new_org", billing_interval: intentSnapshot?.billing_interval ?? billingInterval, trial_days: String(intentSnapshot?.trial_days ?? plan.trial_days) },
       successUrl: `${base}/checkout/sucesso`,
       cancelUrl: `${base}/#planos`,
       idempotencyKey: `checkout-${intentId}`,
+      interval: intentSnapshot?.billing_interval ?? billingInterval,
+      trialDays: intentSnapshot?.trial_days ?? plan.trial_days,
       lineItems: [
         { name: plan.name, priceCents: checkoutPrice, quantity: 1, metadata: { plan_slug: plan.slug, kind: "base" } },
         ...selectedAddons.map((addon) => ({ name: addon.name, priceCents: addon.price_cents, quantity: addon.quantity, metadata: { addon_slug: addon.slug, kind: "addon" } })),

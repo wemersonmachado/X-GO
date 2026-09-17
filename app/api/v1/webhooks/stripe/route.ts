@@ -108,7 +108,9 @@ export async function POST(request: Request): Promise<Response> {
   const admin = createAdminClient();
   const occurredAt = event.created ? new Date(event.created * 1000).toISOString() : null;
   const metadata = record(object.metadata);
-  const checkoutKind = metadata?.checkout_kind === "addon" ? "addon" : "new_org";
+  const checkoutKind = metadata?.checkout_kind === "addon"
+    ? "addon"
+    : metadata?.checkout_kind === "credit_pack" ? "credit_pack" : "new_org";
   const planSlug = typeof metadata?.plan_slug === "string" && VALID_PLANS.has(metadata.plan_slug)
     ? metadata.plan_slug
     : null;
@@ -235,7 +237,10 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const paymentStatus = typeof object.payment_status === "string" ? object.payment_status : null;
-    if (paymentStatus !== "paid") {
+    const trialDays = z.coerce.number().int().min(1).max(30).safeParse(metadata?.trial_days);
+    const isVerifiedTrial = checkoutKind === "new_org" && paymentStatus === "no_payment_required"
+      && trialDays.success && Boolean(idOf(object.subscription));
+    if (paymentStatus !== "paid" && !isVerifiedTrial) {
       if (!await finish(true)) return fail("internal_error", "Evento não finalizado.", 500);
       return ok({ received: true, access_provisioned: false, payment_status: paymentStatus });
     }
@@ -264,6 +269,20 @@ export async function POST(request: Request): Promise<Response> {
       if (addonError || record(addonData)?.eligible !== true) throw new Error("addon_checkout_not_eligible");
       if (!await finish(true)) return fail("internal_error", "Evento não finalizado.", 500);
       return ok({ received: true, addon_activated: true });
+    }
+
+    if (checkoutKind === "credit_pack") {
+      if (!checkoutIntent.success || !checkoutSessionId || !paymentIntentId || amountTotal == null) {
+        await finish(false, "paid_credit_event_missing_required_data");
+        return fail("validation_failed", "Créditos sem dados reconciliáveis.", 500);
+      }
+      const { data: creditData, error: creditError } = await admin.rpc("fn_apply_paid_stripe_credit_pack" as never, {
+        p_checkout_session_id: checkoutSessionId, p_payment_id: paymentIntentId,
+        p_checkout_intent_id: checkoutIntent.data, p_value_cents: amountTotal,
+      } as never);
+      if (creditError || record(creditData)?.eligible !== true) throw new Error("credit_checkout_not_eligible");
+      if (!await finish(true)) return fail("internal_error", "Evento não finalizado.", 500);
+      return ok({ received: true, credits_activated: true });
     }
 
     if (!checkoutIntent.success || !planSlug || !checkoutSessionId || !customerId

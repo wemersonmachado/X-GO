@@ -21,7 +21,19 @@ export const readLanding = cache(async () => {
         ? (plan as { features: unknown[] }).features
         : DEFAULT_LANDING.plans[index]?.features;
       return { ...(plan as Record<string, unknown>), limits, features, checkout_enabled: (plan as { checkout_enabled?: unknown }).checkout_enabled ?? DEFAULT_LANDING.plans[index]?.checkout_enabled };
-    }), addons: (stored as { addons?: unknown }).addons ?? DEFAULT_LANDING.addons }
+    }), addons: Array.isArray((stored as { addons?: unknown }).addons)
+      ? ((stored as { addons: unknown[] }).addons).map((addon) => {
+        if (!addon || typeof addon !== "object") return addon;
+        const current = addon as { slug?: string; price_cents?: number } & Record<string, unknown>;
+        const previousPrices: Record<string, number> = { extra_user: 3900, extra_whatsapp: 9900, extra_active_agent: 7900, extra_conversations_1000: 4900 };
+        const canonical = DEFAULT_LANDING.addons.find((item) => item.slug === current.slug);
+        return previousPrices[current.slug ?? ""] === current.price_cents && canonical
+          ? { ...current, price_cents: canonical.price_cents }
+          : current;
+      })
+      : DEFAULT_LANDING.addons,
+      credit_packs: (stored as { credit_packs?: unknown }).credit_packs ?? DEFAULT_LANDING.credit_packs,
+      billing: { ...DEFAULT_LANDING.billing, ...((stored as { billing?: Record<string, unknown> }).billing ?? {}) } }
     : stored;
   const parsed = landingSchema.safeParse(normalized);
   return parsed.success ? parsed.data : DEFAULT_LANDING;

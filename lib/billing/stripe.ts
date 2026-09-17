@@ -82,10 +82,15 @@ export async function createCheckoutSession(input: {
   cancelUrl: string;
   idempotencyKey: string;
   quantity?: number;
+  mode?: "subscription" | "payment";
+  interval?: "month" | "year";
+  trialDays?: number;
   lineItems?: Array<{ name: string; priceCents: number; quantity: number; metadata?: Record<string, string> }>;
 }): Promise<StripeCheckoutSession> {
+  const mode = input.mode ?? "subscription";
+  const trialDays = mode === "subscription" ? Math.max(0, Math.min(30, input.trialDays ?? 0)) : 0;
   const body = toStripeForm({
-    mode: "subscription",
+    mode,
     // Sem isto, a Stripe tenta detectar métodos automaticamente a partir do
     // dashboard da conta — e uma conta nova, sem nada ativado pra BRL, rejeita
     // a sessão inteira com 400 ("No valid payment method types"). `card`
@@ -100,19 +105,24 @@ export async function createCheckoutSession(input: {
     // fora do processo de checkout). O webhook (route.ts) trata os dois
     // eventos e só provisiona quando `payment_status === "paid"` — sem essa
     // checagem, gerar um boleto e nunca pagar liberaria acesso na hora.
-    payment_method_types: ["card", "boleto"],
+    // Trial exige um meio reutilizável para a cobrança futura; boleto não
+    // satisfaz esse requisito. Compras avulsas e assinaturas sem trial seguem
+    // aceitando boleto.
+    payment_method_types: trialDays > 0 ? ["card"] : ["card", "boleto"],
     success_url: input.successUrl,
     cancel_url: input.cancelUrl,
     client_reference_id: input.clientReferenceId,
     customer_email: input.customerEmail || undefined,
     metadata: input.metadata,
-    subscription_data: { metadata: input.metadata },
+    subscription_data: mode === "subscription"
+      ? { metadata: input.metadata, trial_period_days: trialDays || undefined }
+      : undefined,
     line_items: (input.lineItems ?? [{ name: input.planName, priceCents: input.priceCents, quantity: input.quantity ?? 1, metadata: { plan_slug: input.planSlug } }]).map((item) => ({
       quantity: item.quantity,
       price_data: {
         currency: input.currency.toLowerCase(),
         unit_amount: item.priceCents,
-        recurring: { interval: "month" },
+        recurring: mode === "subscription" ? { interval: input.interval ?? "month" } : undefined,
         product_data: { name: item.name, metadata: item.metadata ?? {} },
       },
     })),

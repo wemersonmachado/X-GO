@@ -171,12 +171,12 @@ export async function LandingPage() {
         <p className={styles.eyebrow}>CRESÇA NO SEU RITMO</p><h2>{config.pricing_title}</h2><p className={styles.priceNote}>{config.pricing_note}</p>
         <div className={styles.prices}>
           {config.plans.map((plan, index) => (
-            <article className={styles.plan} data-featured={index === 1} key={plan.slug}>
+            <article id={`plano-${plan.slug}`} className={styles.plan} data-featured={index === 1} key={plan.slug}>
               {index === 1 && <span className={styles.popular}>MAIS ESCOLHIDO</span>}
               <p className={styles.planLabel}>{index === 1 ? "MAIS POSSIBILIDADES" : "SEU PRÓXIMO PASSO"}</p>
               <h3>{plan.name}</h3><p>{plan.description}</p>
               <ul>{plan.features.map((feature, i) => <li key={i}><span>✓</span>{feature}</li>)}</ul>
-              <PlanConfigurator plan={plan} addons={config.addons} />
+              <PlanConfigurator plan={plan} addons={config.addons} billing={config.billing} nextPlan={index < config.plans.length - 1 ? config.plans[index + 1] : null} />
             </article>
           ))}
         </div>

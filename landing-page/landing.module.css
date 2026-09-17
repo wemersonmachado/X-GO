@@ -215,8 +215,12 @@
 .plan form .primary { width: 100%; font-size: 12px; }
 .planConfigurator { display: grid!important; gap: 12px; }
 .planSnapshot { padding: 16px; border: 1px solid color-mix(in srgb, var(--landing-accent) 34%, var(--line)); border-radius: 13px; background: linear-gradient(135deg, color-mix(in srgb, var(--landing-accent) 14%, var(--panel)), var(--panel)); box-shadow: inset 0 1px #ffffff0d; }
+.billingInterval { display: grid; grid-template-columns: 1fr 1.55fr; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 11px; background: color-mix(in srgb, var(--panel) 76%, transparent); }
+.billingInterval button { min-height: 32px; padding: 6px 8px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 9px; font-weight: 750; cursor: pointer; }
+.billingInterval button[data-active="true"] { background: var(--landing-accent); color: var(--landing-accent-fg); box-shadow: 0 5px 18px color-mix(in srgb, var(--landing-accent) 24%, transparent); }
 .investmentLabel { margin: 0; color: var(--landing-accent); font-size: 9px; font-weight: 850; letter-spacing: 1.45px; }
 .planSnapshot .price { display: block; margin: 5px 0 4px; font-size: clamp(29px, 2.4vw, 38px); font-weight: 850; line-height: 1; letter-spacing: -1.8px; }
+.annualEquivalent { margin: 0!important; color: var(--landing-accent)!important; font-size: 10px!important; font-weight: 750; }
 .snapshotLead { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .limitSummary { display: flex; flex: initial!important; flex-wrap: wrap; gap: 6px; margin: 13px 0 0!important; padding: 0!important; }
 .limitSummary li { margin: 0!important; padding: 5px 7px; border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--bg) 34%, transparent); color: var(--muted); font-size: 9px; line-height: 1.2; white-space: nowrap; }
@@ -226,6 +230,10 @@
 .addonRow { display: grid; grid-template-columns: 1fr 25px 22px 25px; align-items: center; gap: 6px; font-size: 11px; }
 .addonRow span { min-width: 0; }.addonRow strong,.addonRow small { display:block; }.addonRow small { color:var(--muted); font-size:9px; }.addonRow button { width:25px; height:25px; border:1px solid var(--line); border-radius:5px; background:transparent; color:var(--ink); cursor:pointer; }.addonRow button:disabled { opacity:.35; cursor:not-allowed; }.addonRow b { text-align:center; font-size:12px; }
 .planTotal { display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding: 4px 2px 0; }.planTotal span { color:var(--muted); font-size:9px; font-weight:800; letter-spacing:1px; }.planTotal strong { font-size:19px; letter-spacing: -.5px; }.planTotal small { font-size:10px; }.addedBenefits { margin:0!important; color:var(--landing-accent); font-size:10px!important; font-weight: 700; line-height:1.45; }
+.upgradeRecommendation { display: grid; gap: 5px; padding: 13px; border: 1px solid color-mix(in srgb, #48d597 55%, var(--line)); border-radius: 12px; background: color-mix(in srgb, #48d597 10%, var(--panel)); }
+.upgradeRecommendation strong { color: var(--ink); font-size: 12px; }.upgradeRecommendation span { color: var(--muted); font-size: 10px; line-height: 1.45; }.upgradeRecommendation a { color: #48d597; font-size: 10px; font-weight: 800; }
+.trialNotice, .outcomePrice { margin: 0!important; color: var(--ink)!important; font-size: 10px!important; font-weight: 700; }
+.metaFees { margin: 0!important; color: var(--muted)!important; font-size: 9px!important; line-height: 1.45; }
 
 .faq { max-width: 900px; padding-block: 100px; background: radial-gradient(ellipse at center, color-mix(in srgb, var(--landing-accent) 6%, transparent), transparent 65%); }
 .faq h2 { margin-bottom: 35px; }

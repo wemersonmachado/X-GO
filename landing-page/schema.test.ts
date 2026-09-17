@@ -7,6 +7,14 @@ describe("landing pública", () => {
     expect(DEFAULT_LANDING.pricing_note).toContain("contratação");
     expect(DEFAULT_LANDING.plans).toHaveLength(3);
     expect(DEFAULT_LANDING.plans.every((plan) => plan.price_cents > 0)).toBe(true);
+    expect(DEFAULT_LANDING.addons.map((addon) => addon.price_cents)).toEqual([2999, 5900, 2900, 1999]);
+    expect(DEFAULT_LANDING.billing.usage_alert_percent).toBe(80);
+    expect(DEFAULT_LANDING.billing.hard_limit_percent).toBe(100);
+    expect(DEFAULT_LANDING.credit_packs).toHaveLength(3);
+    expect(DEFAULT_LANDING.addons.map((addon) => addon.price_cents)).toEqual([2999, 5900, 2900, 1999]);
+    expect(DEFAULT_LANDING.billing.usage_alert_percent).toBe(80);
+    expect(DEFAULT_LANDING.billing.hard_limit_percent).toBe(100);
+    expect(DEFAULT_LANDING.credit_packs).toHaveLength(3);
   });
   it.each(["javascript:alert(1)", "//evil.test", "/\\evil.test", "http://evil.test", "https://user:pass@example.com"])("recusa CTA inseguro %s", cta_url => {
     expect(landingSchema.safeParse({ ...DEFAULT_LANDING, cta_url }).success).toBe(false);
