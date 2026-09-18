@@ -24922,39 +24922,6 @@ grant execute on function public.fn_sync_stripe_subscription(text,text,text,text
 
 notify pgrst, 'reload schema';
 
--- ---- VARREDURA anon: toda função security definer criada no apêndice acima ----
--- Último bloco de propósito: ALTER DEFAULT PRIVILEGES do dump pode fazer uma
--- função nova nascer executável por anon durante UPDATE.
-do $$
-declare
-  f record;
-  tinha_auth boolean;
-  tinha_service boolean;
-begin
-  for f in
-    select p.oid, p.oid::regprocedure as assinatura
-      from pg_proc p
-      join pg_namespace n on n.oid = p.pronamespace
-     where n.nspname = 'public'
-       and p.prosecdef
-  loop
-    tinha_auth := to_regrole('authenticated') is not null
-                  and has_function_privilege('authenticated', f.oid, 'EXECUTE');
-    tinha_service := to_regrole('service_role') is not null
-                     and has_function_privilege('service_role', f.oid, 'EXECUTE');
-
-    execute format('revoke execute on function %s from public, anon', f.assinatura);
-
-    if tinha_auth then
-      execute format('grant execute on function %s to authenticated', f.assinatura);
-    end if;
-    if tinha_service then
-      execute format('grant execute on function %s to service_role', f.assinatura);
-    end if;
-  end loop;
-end $$;
-
-
 -- BEGIN 0246_stripe_processamento_duravel
 
 -- ---- Entitlements comerciais e adicionais Stripe (migration 0247) ----
@@ -25383,3 +25350,53 @@ begin
   elsif v_next in ('active','trialing') then update public.organizations set status='active',suspended_at=null,suspended_by=null,suspended_reason=null,updated_at=now() where id=v_sub.organization_id and status='suspended' and suspended_reason like 'billing:%'; if found then v_org_action:='reactivated'; end if; end if;
   return jsonb_build_object('matched',true,'organization_id',v_sub.organization_id,'previous_status',v_previous,'status',v_next,'organization_action',v_org_action);
 end; $$;
+
+-- ---- Compatibilidade de intents anteriores ao snapshot total (migration 0250) ----
+-- Escritores antigos informavam somente price_cents. O total da cesta continua
+-- obrigatório; quando ausente, a própria linha-base é o total correto.
+create or replace function public.fn_checkout_intent_default_total() returns trigger
+language plpgsql set search_path = '' as $$
+begin
+  if new.total_price_cents is null then
+    new.total_price_cents := new.price_cents;
+  end if;
+  return new;
+end; $$;
+revoke execute on function public.fn_checkout_intent_default_total() from public, anon, authenticated;
+grant execute on function public.fn_checkout_intent_default_total() to service_role;
+drop trigger if exists trg_checkout_intent_default_total on public.platform_checkout_intents;
+create trigger trg_checkout_intent_default_total
+before insert or update of price_cents, total_price_cents on public.platform_checkout_intents
+for each row execute function public.fn_checkout_intent_default_total();
+
+-- ---- VARREDURA anon: toda função security definer criada no apêndice acima ----
+-- Último bloco de propósito: ALTER DEFAULT PRIVILEGES do dump pode fazer uma
+-- função nova nascer executável por anon durante UPDATE.
+do $$
+declare
+  f record;
+  tinha_auth boolean;
+  tinha_service boolean;
+begin
+  for f in
+    select p.oid, p.oid::regprocedure as assinatura
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.prosecdef
+  loop
+    tinha_auth := to_regrole('authenticated') is not null
+                  and has_function_privilege('authenticated', f.oid, 'EXECUTE');
+    tinha_service := to_regrole('service_role') is not null
+                     and has_function_privilege('service_role', f.oid, 'EXECUTE');
+
+    execute format('revoke execute on function %s from public, anon', f.assinatura);
+
+    if tinha_auth then
+      execute format('grant execute on function %s to authenticated', f.assinatura);
+    end if;
+    if tinha_service then
+      execute format('grant execute on function %s to service_role', f.assinatura);
+    end if;
+  end loop;
+end $$;

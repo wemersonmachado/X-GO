@@ -3898,6 +3898,13 @@ export const DICIONARIO: Traducoes = {
   Escopos: { es: "Alcances" },
   Expira: { es: "Expira" },
   "Token revogado.": { es: "Token revocado." },
+  "Excluir token definitivamente": { es: "Eliminar token definitivamente" },
+  "O token revogado será removido do cadastro. O registro da ação permanece na auditoria e esta ação não pode ser desfeita.": { es: "El token revocado se eliminará del registro. La acción permanecerá en la auditoría y no se puede deshacer." },
+  "Token excluído definitivamente.": { es: "Token eliminado definitivamente." },
+  "Revogue o token antes de excluí-lo definitivamente.": { es: "Revoca el token antes de eliminarlo definitivamente." },
+  "A credencial passou a ser usada por uma versão publicada. Atualize e tente novamente.": { es: "La credencial comenzó a ser usada por una versión publicada. Actualiza e inténtalo de nuevo." },
+  "O provedor demorou mais de 20 segundos. Tente novamente em instantes.": { es: "El proveedor tardó más de 20 segundos. Inténtalo de nuevo en unos instantes." },
+  "Não foi possível concluir o teste. Verifique a conexão e tente novamente.": { es: "No fue posible completar la prueba. Comprueba la conexión e inténtalo de nuevo." },
   Revogar: { es: "Revocar" },
   "Criar novo token": { es: "Crear nuevo token" },
   "O plaintext será mostrado apenas uma vez.": {

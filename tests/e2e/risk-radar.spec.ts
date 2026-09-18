@@ -71,7 +71,7 @@ test("o atendente vê no Radar a demanda aberta que esfriou sem próximo passo",
   await expect(item.getByTestId("radar-delete-lead")).toBeVisible();
   await expect(item.getByTestId("radar-delete-contact")).toBeVisible();
   await item.getByTestId("radar-delete-lead").click();
-  await expect(page.getByRole("dialog")).toContainText("Excluir lead definitivamente?");
+  await expect(page.getByRole("alertdialog")).toContainText("Excluir lead definitivamente?");
   await page.getByRole("button", { name: "Cancelar" }).click();
 });
 

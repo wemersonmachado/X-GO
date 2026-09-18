@@ -64,6 +64,15 @@ const DIVERGENCIAS_CONHECIDAS = {
 } as const;
 
 /**
+ * Migrations legadas aplicadas antes da convenção `NNNN_slug`. O timestamp é
+ * a identidade no Supabase; o alias conserva o arquivo histórico e ainda o
+ * cruza com o registro canônico do MANIFEST.
+ */
+const CHAVES_LEGADAS: Record<string, string> = {
+  planos_alertas_creditos_anual: "0249_planos_alertas_creditos_anual",
+};
+
+/**
  * Os quatro pares que já nasciam repetidos foram DESFEITOS (issue #143), então
  * esta lista está vazia — e é para continuar assim.
  *
@@ -101,7 +110,8 @@ function nomesDeMigration(): string[] {
   return readdirSync(DIR)
     .filter((f) => f.endsWith(".sql"))
     .map((f) => f.slice(0, -4))
-    .map((f) => (/^\d{14}_/.test(f) ? f.slice(15) : f));
+    .map((f) => (/^\d{14}_/.test(f) ? f.slice(15) : f))
+    .map((f) => CHAVES_LEGADAS[f] ?? f);
 }
 
 describe("MANIFEST × arquivos de migration", () => {

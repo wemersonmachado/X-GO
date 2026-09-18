@@ -70,6 +70,7 @@ export const AUDIT_ACTIONS = [
   "member.revoked",
   "token.created",
   "token.revoked",
+  "token.deleted",
   "profile.updated",
   "org.updated",
   "pipeline.config_updated",

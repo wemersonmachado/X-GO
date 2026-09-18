@@ -131,6 +131,9 @@ describe("webhook Stripe durável", () => {
           error: null,
         };
       }
+      if (name === "fn_sync_stripe_addon") {
+        return { data: { matched: false }, error: null };
+      }
       if (name === "fn_finish_stripe_event") return { data: true, error: null };
       throw new Error(`RPC inesperada: ${name}`);
     });

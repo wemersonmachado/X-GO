@@ -64,6 +64,38 @@ execFileSync(
   },
 );
 
+// Fixtures históricas criam organizações por SQL direto porque medem RLS,
+// agenda, canais ou agentes — não contratação. Sem um plano declarado, o
+// produto corretamente assume Standard e esses cenários passam a falhar antes
+// de alcançar o comportamento que vieram provar. No banco efêmero apenas, toda
+// organização de fixture recebe Enterprise; um entitlement explícito posterior
+// continua soberano por usar upsert. A função fica fora de `public`, para não
+// contaminar as varreduras de superfície RPC do produto.
+execFileSync(
+  "docker",
+  ["exec", "-i", container, "psql", "-U", "postgres", "-d", "postgres", "-qtA", "-v", "ON_ERROR_STOP=1", "-f", "-"],
+  {
+    input: `
+      create schema if not exists test_harness;
+      create or replace function test_harness.give_fixture_capacity() returns trigger
+      language plpgsql set search_path = '' as $$
+      begin
+        insert into public.organization_plan_entitlements
+          (organization_id, plan_slug, source, status)
+        values (new.id, 'enterprise', 'manual', 'active')
+        on conflict (organization_id) do nothing;
+        return new;
+      end; $$;
+      drop trigger if exists trg_test_fixture_capacity on public.organizations;
+      create trigger trg_test_fixture_capacity
+      after insert on public.organizations for each row
+      when ((new.settings->>'plan') is null)
+      execute function test_harness.give_fixture_capacity();
+    `,
+    encoding: "utf8",
+  },
+);
+
 // Marcador lido por tests/invariants/harness-isola-por-arquivo.test.ts. Sem ele
 // aquele invariante não teria como distinguir "recebi um banco limpo porque o
 // reset rodou" de "recebi um banco limpo porque calhei de ser o primeiro

@@ -38,6 +38,16 @@ describe("deriveAgentStatus", () => {
     expect(deriveAgentStatus({ ...base, published_version_id: "v1" } as AgentRow)).toBe("published");
   });
 
+  it("com versão publicada e paused_at é PAUSADO", () => {
+    expect(
+      deriveAgentStatus({
+        ...base,
+        published_version_id: "v1",
+        paused_at: "2026-09-18T12:00:00.000Z",
+      } as AgentRow),
+    ).toBe("paused");
+  });
+
   it("com versão publicada é PUBLICADO mesmo com is_active false — em QUALQUER kind", () => {
     // `is_active` não decide nada quando há versão publicada: nem o
     // agent-engine (`loadPublishedAgentConfig`) nem o dispatcher leem a coluna.

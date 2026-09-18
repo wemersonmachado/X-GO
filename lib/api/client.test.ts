@@ -95,4 +95,15 @@ describe("apiClient", () => {
     const headers = fetchMock.mock.calls[0]![1].headers as Record<string, string>;
     expect(headers["Idempotency-Key"]).toBe("custom-key-123");
   });
+
+  it("t8: maxAttempts=1 não repete uma mutação cara", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(503, { error: { code: "service_unavailable", message: "indisponível" } }),
+    );
+
+    await expect(
+      apiClient.post("/preview", { sample_message: "oi" }, { maxAttempts: 1 }),
+    ).rejects.toBeInstanceOf(ApiError);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });

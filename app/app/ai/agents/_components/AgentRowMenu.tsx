@@ -2,6 +2,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import { DotsThree, PencilSimple, Copy, Pause, Play, Archive } from "@/lib/ui/ic
 import { useT } from "@/hooks/i18n/useT";
 import { deriveAgentStatus } from "./AgentStatusBadge";
 import type { AgentRow } from "@/hooks/ai/useAgent";
+import { agentsListQueryKey } from "@/hooks/ai/useAgents";
 import {
   archiveAgentAction,
   deleteAgentAction,
@@ -42,6 +44,7 @@ interface Props {
 export function AgentRowMenu({ agent }: Props) {
   const t = useT();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
   const [renameOpen, setRenameOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -58,6 +61,10 @@ export function AgentRowMenu({ agent }: Props) {
         const res = await action();
         if (res.ok) {
           toast.success(label);
+          // A grade é controlada por React Query. `router.refresh()` sozinho
+          // atualiza o Server Component, mas não substitui esse cache — origem
+          // do F5 necessário após pausar/arquivar/excluir.
+          await queryClient.invalidateQueries({ queryKey: agentsListQueryKey });
           router.refresh();
         } else {
           toast.error(res.message ?? `${t("Falha")}: ${res.error ?? "unknown"}`);

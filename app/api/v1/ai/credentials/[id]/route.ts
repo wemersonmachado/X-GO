@@ -4,8 +4,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  *
  * Bloqueia se a credential é referenciada por uma `ai_agent_versions` que é a
  * `published_version_id` de algum agent não-arquivado da org.
- * Caso contrário, deleta. A FK ON DELETE RESTRICT é a última linha de defesa
- * (drafts não-publicadas também referenciam — preferimos erro 409 amigável).
+ * Caso contrário, desvincula drafts/histórico e deleta. A versão preserva
+ * provider/model/prompt; somente o segredo que a executaria deixa de existir.
+ * A FK ON DELETE RESTRICT continua sendo a última linha de defesa contra corrida.
  */
 import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
@@ -73,6 +74,25 @@ export async function DELETE(
     );
   }
 
+  // A FK é RESTRICT de propósito: uma credencial não pode sumir enquanto uma
+  // versão publicada e viva a utiliza. Depois da guarda acima, porém, as únicas
+  // referências restantes são drafts, versões substituídas ou agentes
+  // arquivados. Manter o id nelas tornava o botão "Excluir" impossível mesmo
+  // quando a tela mostrava "Em uso por 0". O histórico funcional permanece;
+  // apenas a referência ao segredo removido é limpa.
+  const linkedIds = (linked ?? []).map((row) => row.id);
+  if (linkedIds.length > 0) {
+    const { error: unlinkErr } = await admin
+      .from("ai_agent_versions")
+      .update({ credential_id: null })
+      .eq("organization_id", activeOrg.orgId)
+      .eq("credential_id", id)
+      .in("id", linkedIds);
+    if (unlinkErr) {
+      return fail("internal_error", "Erro ao desvincular credential.", 500, { requestId });
+    }
+  }
+
   const { error: delErr } = await admin
     .from("ai_provider_credentials")
     .delete()
@@ -83,7 +103,7 @@ export async function DELETE(
     if (delErr.code === "23503") {
       return fail(
         "credential_in_use",
-        t("Credential referenciada (FK ON DELETE RESTRICT). Remova as versões antes."),
+        t("A credencial passou a ser usada por uma versão publicada. Atualize e tente novamente."),
         409,
         { requestId },
       );
