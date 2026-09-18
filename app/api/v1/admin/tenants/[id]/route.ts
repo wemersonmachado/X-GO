@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { randomUUID } from "node:crypto";
+import { removerContaSemAcesso } from "@/lib/auth/remover-conta-orfa";
 
 // ---------------------------------------------------------------------------
 // GET /api/v1/admin/tenants/[id]
@@ -267,13 +268,14 @@ export async function DELETE(
 
   // Contagem ANTES de apagar — depois do `delete` não há a quem perguntar, e
   // "quantas conversas foram destruídas" é a pergunta que alguém vai fazer.
-  const [usersRes, conversationsRes, messagesRes, contactsRes, leadsRes] =
+  const [usersRes, conversationsRes, messagesRes, contactsRes, leadsRes, memberIdsRes] =
     await Promise.all([
       admin.from("user_organizations").select("*", { count: "exact", head: true }).eq("organization_id", id),
       admin.from("conversations").select("*", { count: "exact", head: true }).eq("organization_id", id),
       admin.from("messages").select("*", { count: "exact", head: true }).eq("organization_id", id),
       admin.from("contacts").select("*", { count: "exact", head: true }).eq("organization_id", id),
       admin.from("crm_leads").select("*", { count: "exact", head: true }).eq("organization_id", id),
+      admin.from("user_organizations").select("user_id").eq("organization_id", id),
     ]);
 
   const destruido = {
@@ -310,5 +312,19 @@ export async function DELETE(
     return fail("internal_error", "Failed to delete tenant", 500, { requestId });
   }
 
-  return ok({ id, deleted: true, destruido }, { requestId });
+  // A FK da membership é cascade, mas Auth é um schema separado: removemos a
+  // identidade apenas se ela não sobrou em outra organização. O ator da
+  // exclusão é protegido explicitamente, além da cerca para platform_admins.
+  const candidatos = [...new Set((memberIdsRes.data ?? []).map((row) => row.user_id))];
+  const limpeza = await Promise.all(
+    candidatos.map((userId) =>
+      removerContaSemAcesso(admin, userId, new Set([adminCtx.user.id])),
+    ),
+  );
+  const contasRemovidas = limpeza.filter((resultado) => resultado === "removida").length;
+
+  return ok(
+    { id, deleted: true, destruido, auth_accounts_removed: contasRemovidas },
+    { requestId },
+  );
 }

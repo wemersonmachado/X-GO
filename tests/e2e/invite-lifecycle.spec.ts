@@ -432,6 +432,22 @@ test.describe("ciclo de vida do convite (ponta a ponta + adversarial)", () => {
     }
     await ctx.close();
   });
+
+  test("14. conta já existente volta ao login e preserva o convite para o aceite", async ({ page }) => {
+    const valid = signInviteToken({
+      invite_id: randomUUID(),
+      email: inv.invitee_email,
+      organization_id: inv.org_id,
+      role: "agent",
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    await page.goto(`/signup?invite=${encodeURIComponent(valid)}`);
+    await page.getByLabel("Senha", { exact: true }).fill(base.password);
+    await page.getByLabel("Confirmar senha").fill(base.password);
+    await page.getByRole("button", { name: /criar conta/i }).click();
+    await page.waitForURL(new RegExp(`/login\\?next=${encodeURIComponent(`/team/accept-invite/${valid}`)}`));
+  });
 });
 
 // helper: extrai só o path (relativo) do accept_url absoluto pro page.goto

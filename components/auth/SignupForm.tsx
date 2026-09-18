@@ -83,7 +83,12 @@ export function SignupForm({ convite }: { convite: ConviteDoSignup }) {
       if (res.error === "rate_limited") {
         setServerError(t("Muitas tentativas. Aguarde alguns minutos."));
       } else if (res.error === "account_exists") {
-        setServerError(t("Este e-mail já possui uma conta. Entre com sua senha para aceitar o convite."));
+        // A conta já existe, portanto criar outra nunca vai funcionar. O
+        // destino preserva o convite: depois do login, a tela de aceite usa o
+        // mesmo token assinado e reativa o vínculo revogado quando ele é novo.
+        router.replace(
+          `/login?next=${encodeURIComponent(`/team/accept-invite/${convite.token}`)}`,
+        );
       } else if (res.error === "invite_required") {
         setServerError(t("Este acesso exige um convite válido."));
       } else if (res.error === "validation_error") {
