@@ -4,6 +4,7 @@ node_modules/
 # chamado node_modules (worktree apontando para a instalacao principal) passa
 # batido e vai parar no commit. Aconteceu no PR #83.
 node_modules
+.pnpm-store/
 .pnp
 .pnp.js
 

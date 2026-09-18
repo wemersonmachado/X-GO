@@ -1,6 +1,7 @@
 # Reduz o contexto de build e — crítico — mantém segredos fora da imagem.
 # Sem isto o `next build` carregaria .env.local e embutiria/vazaria segredos.
 node_modules
+.pnpm-store
 .next
 .git
 .env

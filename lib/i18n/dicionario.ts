@@ -8431,6 +8431,15 @@ export const DICIONARIO: Traducoes = {
   "Eventos recentes": { es: "Eventos recientes" },
   "A conciliar": { es: "Por conciliar" },
   "Nenhum evento recebido.": { es: "No se recibió ningún evento." },
+  "Cadastrar nova chave": { es: "Registrar nueva clave" },
+  "Remova chaves antigas abaixo.": { es: "Elimina las claves antiguas a continuación." },
+  "Chaves deste provedor": { es: "Claves de este proveedor" },
+  "Remover credencial selecionada?": { es: "¿Eliminar la credencial seleccionada?" },
+  "Agentes publicados que usam esta chave não podem removê-la. O sistema confirmará isso antes de excluir.": { es: "Los agentes publicados que usan esta clave no pueden eliminarla. El sistema lo confirmará antes de borrarla." },
+  "Credencial salva e validada.": { es: "Credencial guardada y validada." },
+  "WhatsApps": { es: "WhatsApps" },
+  "Agentes ativos": { es: "Agentes activos" },
+  "Este é o quadro padrão que veio na instalação. Se ele já tiver clientes ou integrações, o novo modelo vira o padrão sem mover nem apagar o que já existe.": { es: "Este es el tablero predeterminado incluido en la instalación. Si ya tiene clientes o integraciones, el nuevo modelo se convierte en el predeterminado sin mover ni eliminar lo que ya existe." },
 };
 
 /**
