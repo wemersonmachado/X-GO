@@ -355,6 +355,11 @@ export function AgentForm(props: Props) {
   }, [isEdit, props]);
 
   const [form, setForm] = React.useState<FormState>(baseline);
+  // Credenciais podem ser criadas/removidas sem abandonar este formulário. A
+  // cópia local garante que o seletor, a validação e o Publish enxerguem o
+  // resultado imediatamente — esperar um refresh faria a chave recém-criada
+  // parecer inexistente justamente no passo de criação do agente.
+  const [credentials, setCredentials] = React.useState<CredentialRow[]>(props.credentials);
   const [saving, setSaving] = React.useState(false);
   const [publishing, setPublishing] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -371,6 +376,10 @@ export function AgentForm(props: Props) {
    * que salvou um e não o outro.
    */
   const [papel, setPapel] = React.useState<"conversa" | "operacao" | "seguranca">("conversa");
+
+  React.useEffect(() => {
+    setCredentials(props.credentials);
+  }, [props.credentials]);
 
   const dirty = JSON.stringify(form) !== JSON.stringify(baseline);
   // Não use o objeto inteiro de props como dependência do autosave. Ele pode
@@ -430,7 +439,7 @@ export function AgentForm(props: Props) {
     patch({ provider: p, credential_id: "", model: "" });
   }
 
-  const cred = findCredential(props.credentials, form.credential_id);
+  const cred = findCredential(credentials, form.credential_id);
   const credSt = cred ? credentialStatus(cred) : null;
   const channelSession = props.channelSessions.find((c) => c.id === form.channel_session_id);
   const modelMeta = useModelMeta(form.provider, form.model);
@@ -915,7 +924,8 @@ export function AgentForm(props: Props) {
 
             <CredentialPicker
               provider={form.provider}
-              credentials={props.credentials}
+              credentials={credentials}
+              onCredentialsChange={setCredentials}
               value={form.credential_id}
               onChange={(id) => patch({ credential_id: id })}
               disabled={disabled}

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -52,21 +52,34 @@ interface CreateResponse {
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Permite abrir o diálogo já no provedor escolhido pelo agente. */
+  initialProvider?: Provider;
+  /** O editor escolhe imediatamente a chave recém-validada, sem recarregar a página. */
+  onCreated?: (credential: CredentialRow) => void;
 }
 
-export function AddCredentialDialog({ open, onOpenChange }: Props) {
+export function AddCredentialDialog({
+  open,
+  onOpenChange,
+  initialProvider = "anthropic",
+  onCreated,
+}: Props) {
   const t = useT();
   const router = useRouter();
   const qc = useQueryClient();
-  const [provider, setProvider] = useState<Provider>("anthropic");
+  const [provider, setProvider] = useState<Provider>(initialProvider);
   const [label, setLabel] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({});
   const provedor = PROVEDORES.find((p) => p.id === provider) ?? PROVEDORES[0];
 
+  useEffect(() => {
+    if (!open) setProvider(initialProvider);
+  }, [initialProvider, open]);
+
   const reset = () => {
-    setProvider("anthropic");
+    setProvider(initialProvider);
     setLabel("");
     setApiKey("");
     setErrors({});
@@ -94,10 +107,26 @@ export function AddCredentialDialog({ open, onOpenChange }: Props) {
         "/api/v1/ai/credentials",
         parsed.data,
       );
+      // O POST persiste primeiro; a revalidação é síncrona e devolve um estado
+      // conclusivo para o wizard. Sem isso a pessoa escolhia uma chave que o
+      // próprio formulário ainda chamava de "validando" e o Publish ficava
+      // bloqueado sem oferecer uma ação no mesmo lugar.
+      const validated = await apiClient.post<CreateResponse>(
+        `/api/v1/ai/credentials/${res.data.id}/revalidate`,
+        {},
+        { timeoutMs: 12_000 },
+      );
       toast.dismiss(validatingToast);
-      toast.success(t("Credencial salva. Validação em segundo plano."));
+      const credential = validated.data;
+      if (credential.validation_error) {
+        const erro = descreverErroDeValidacao(credential.validation_error);
+        toast.error(erro.generico ? `${t("Falha na validação")} (${credential.validation_error}).` : t(erro.frase));
+      } else {
+        toast.success(t("Credencial salva e validada."));
+      }
       reset();
       onOpenChange(false);
+      onCreated?.(credential);
 
       // Poll uma vez após ~3s para refletir validated_at no card.
       setTimeout(async () => {

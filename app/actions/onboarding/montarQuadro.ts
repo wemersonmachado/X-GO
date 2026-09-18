@@ -29,6 +29,8 @@ import { requireOnboardingCtx, patchOnboardingState, loadOnboardingState, Onboar
 export interface QuadroAtual {
   pipelineId: string;
   nome: string;
+  slug: string;
+  position: number;
   colunas: string[];
 }
 
@@ -92,7 +94,7 @@ async function carregarQuadroAtual(
 ): Promise<QuadroAtual | null> {
   const { data: funil } = await admin
     .from("crm_pipelines")
-    .select("id, name")
+    .select("id, name, slug, position")
     .eq("organization_id", orgId)
     .eq("is_default", true)
     .eq("is_archived", false)
@@ -109,6 +111,8 @@ async function carregarQuadroAtual(
   return {
     pipelineId: funil.id as string,
     nome: String(funil.name ?? ""),
+    slug: String(funil.slug ?? ""),
+    position: Number(funil.position ?? 1000),
     colunas: (etapas ?? []).map((e) => String(e.name ?? "")),
   };
 }
@@ -248,13 +252,116 @@ export async function aplicarQuadro(formData: FormData): Promise<ResultadoDoQuad
 
   const r = (resposta ?? {}) as { ok?: boolean; motivo?: string; quantos?: number };
   if (!r.ok) {
+    // Clientes e fontes de webhook tornam a substituição destrutiva. Em vez de
+    // deixar o wizard terminar num beco, nasce um novo quadro padrão: os
+    // clientes antigos e a integração continuam no quadro anterior, enquanto
+    // os próximos atendimentos passam a entrar no modelo escolhido.
+    if (r.motivo === "funil_com_negocios" || r.motivo === "etapa_em_uso_por_webhook") {
+      const criado = await criarQuadroPreservandoAtual({
+        admin,
+        orgId: ctx.orgId,
+        atual,
+        proposta,
+        slug: slugDeNome(
+          proposta.nome,
+          [...(outros ?? []).map((p) => String(p.slug ?? "")), atual.slug],
+          "funil",
+        ),
+      });
+      if (!criado.ok) return criado;
+      return finalizarQuadro({
+        ctx,
+        pipelineId: criado.pipelineId,
+        origem: String(formData.get("origem") ?? "pacote") === "ia" ? "ia" : "pacote",
+        etapas: proposta.etapas.length,
+        nome: proposta.nome,
+        preservouQuadroAnterior: true,
+      });
+    }
     return { ok: false, erro: explicarRecusa(r.motivo, r.quantos) };
   }
 
-  const origem = String(formData.get("origem") ?? "pacote") === "ia" ? "ia" : "pacote";
+  return finalizarQuadro({
+    ctx,
+    pipelineId: atual.pipelineId,
+    origem: String(formData.get("origem") ?? "pacote") === "ia" ? "ia" : "pacote",
+    etapas: proposta.etapas.length,
+    nome: proposta.nome,
+    preservouQuadroAnterior: false,
+  });
+}
+
+async function criarQuadroPreservandoAtual(args: {
+  admin: ReturnType<typeof createAdminClient>;
+  orgId: string;
+  atual: QuadroAtual;
+  proposta: PropostaDeFunil;
+  slug: string;
+}): Promise<{ ok: true; pipelineId: string } | ResultadoDoQuadro> {
+  const { admin, orgId, atual, proposta, slug } = args;
+  const { data: novo, error: novoErro } = await admin
+    .from("crm_pipelines")
+    .insert({
+      organization_id: orgId,
+      name: proposta.nome,
+      slug,
+      position: atual.position + 1,
+      is_default: false,
+    })
+    .select("id")
+    .single();
+  if (novoErro || !novo) return { ok: false, erro: "Não consegui criar o novo quadro. Seus clientes não foram alterados." };
+
+  const pipelineId = novo.id as string;
+  const { error: etapasErro } = await admin.from("crm_stages").insert(
+    etapasParaGravar(proposta, slugDeNome).map((etapa) => ({
+      organization_id: orgId,
+      pipeline_id: pipelineId,
+      name: etapa.nome,
+      slug: etapa.slug,
+      position: etapa.position,
+      is_won: etapa.is_won,
+      is_lost: etapa.is_lost,
+      agent_stage_hint: etapa.agent_stage_hint,
+    })),
+  );
+  if (etapasErro) {
+    await admin.from("crm_pipelines").delete().eq("id", pipelineId).eq("organization_id", orgId);
+    return { ok: false, erro: "Não consegui montar as colunas do novo quadro. Seus clientes não foram alterados." };
+  }
+
+  // O índice de padrão é imediato: libera o antigo, depois ocupa o lugar. Se
+  // a segunda escrita falhar, restaura o antigo e remove o quadro recém-criado.
+  const { error: liberarErro } = await admin
+    .from("crm_pipelines")
+    .update({ is_default: false })
+    .eq("id", atual.pipelineId)
+    .eq("organization_id", orgId);
+  if (!liberarErro) {
+    const { error: elegerErro } = await admin
+      .from("crm_pipelines")
+      .update({ is_default: true })
+      .eq("id", pipelineId)
+      .eq("organization_id", orgId);
+    if (!elegerErro) return { ok: true, pipelineId };
+    await admin.from("crm_pipelines").update({ is_default: true }).eq("id", atual.pipelineId).eq("organization_id", orgId);
+  }
+  await admin.from("crm_pipelines").delete().eq("id", pipelineId).eq("organization_id", orgId);
+  return { ok: false, erro: "Não consegui definir o novo quadro como padrão. Seus clientes não foram alterados." };
+}
+
+async function finalizarQuadro(args: {
+  ctx: Awaited<ReturnType<typeof requireOnboardingCtx>>;
+  pipelineId: string;
+  origem: "ia" | "pacote";
+  etapas: number;
+  nome: string;
+  preservouQuadroAnterior: boolean;
+}): Promise<ResultadoDoQuadro> {
+  const { ctx, pipelineId, origem, etapas, nome, preservouQuadroAnterior } = args;
   try {
     await patchOnboardingState(ctx.orgId, {
-      funil: { pipeline_id: atual.pipelineId, origem, etapas: proposta.etapas.length },
+      funil: { pipeline_id: pipelineId, origem, etapas, preservou_quadro_anterior: preservouQuadroAnterior },
     });
   } catch (err) {
     if (err instanceof OnboardingError) return { ok: false, erro: "Salvei o quadro, mas não consegui registrar o passo. Tente continuar de novo." };
@@ -266,8 +373,8 @@ export async function aplicarQuadro(formData: FormData): Promise<ResultadoDoQuad
     actorUserId: ctx.userId,
     organizationId: ctx.orgId,
     resourceType: "crm_pipeline",
-    resourceId: atual.pipelineId,
-    metadata: { origem, etapas: proposta.etapas.length, nome: proposta.nome },
+    resourceId: pipelineId,
+    metadata: { origem, etapas, nome, preservou_quadro_anterior: preservouQuadroAnterior },
   });
 
   redirect("/onboarding");

@@ -306,6 +306,53 @@ test.describe("o wizard monta um funcionário", () => {
     await expect(page.locator('input[aria-label="Nome da coluna 1"]')).toHaveValue("Novo contato");
   });
 
+  test("modelo pronto preserva clientes e integrações do quadro anterior", async ({ page }) => {
+    const { data: anterior } = await svc
+      .from("crm_pipelines")
+      .select("id")
+      .eq("organization_id", orgId)
+      .eq("is_default", true)
+      .single();
+    const { data: etapaAnterior } = await svc
+      .from("crm_stages")
+      .select("id")
+      .eq("organization_id", orgId)
+      .eq("pipeline_id", anterior!.id)
+      .order("position")
+      .limit(1)
+      .single();
+    await svc.from("crm_leads").insert({
+      organization_id: orgId,
+      pipeline_id: anterior!.id,
+      stage_id: etapaAnterior!.id,
+      title: "Cliente preservado pelo onboarding",
+      position_in_stage: 1000,
+    });
+
+    await login(page);
+    await page.waitForURL(/\/onboarding\/funil/, { timeout: 30_000 });
+    await page.getByRole("button", { name: /modelo pronto/i }).click();
+    await page.getByRole("button", { name: /gestor de tráfego ou agência de anúncios/i }).click();
+    await page.getByRole("button", { name: /usar este quadro/i }).click();
+    await page.waitForURL(/\/onboarding\/testar/, { timeout: 30_000 });
+
+    const { data: novoPadrao } = await svc
+      .from("crm_pipelines")
+      .select("id, name")
+      .eq("organization_id", orgId)
+      .eq("is_default", true)
+      .single();
+    expect(novoPadrao).toMatchObject({ name: "Campanhas" });
+    expect(novoPadrao!.id).not.toBe(anterior!.id);
+    const { data: cliente } = await svc
+      .from("crm_leads")
+      .select("pipeline_id")
+      .eq("organization_id", orgId)
+      .eq("title", "Cliente preservado pelo onboarding")
+      .single();
+    expect(cliente?.pipeline_id).toBe(anterior!.id);
+  });
+
   test("coluna sem nome barra o salvar, em vez de sumir calada", async ({ page }) => {
     // `normalizarProposta` DESCARTA nome vazio. Sem esta trava, a pessoa
     // acrescenta uma coluna, esquece de nomeá-la, salva, avança — e a coluna

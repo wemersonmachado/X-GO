@@ -81,6 +81,38 @@ export const PACOTES: readonly PacoteDeFunil[] = [
     },
   },
   {
+    id: "trafego-pago",
+    comoSeApresenta: "Gestor de tráfego ou agência de anúncios",
+    proposta: {
+      nome: "Campanhas",
+      etapas: [
+        { nome: "Novo interessado", passo: "new" },
+        { nome: "Diagnóstico marcado", passo: "contacted" },
+        { nome: "Entendendo a conta", passo: "qualifying" },
+        { nome: "Proposta de gestão enviada", passo: "qualified" },
+        { nome: "Alinhando investimento", passo: "negotiating" },
+        { nome: "Cliente ativo", passo: "won" },
+        { nome: "Não avançou", passo: "lost" },
+      ],
+    },
+  },
+  {
+    id: "trafego-local",
+    comoSeApresenta: "Tráfego para negócio local",
+    proposta: {
+      nome: "Captação local",
+      etapas: [
+        { nome: "Novo lead", passo: "new" },
+        { nome: "Primeiro contato", passo: "contacted" },
+        { nome: "Qualificando região e serviço", passo: "qualifying" },
+        { nome: "Plano de captação enviado", passo: "qualified" },
+        { nome: "Aguardando decisão", passo: "negotiating" },
+        { nome: "Campanha contratada", passo: "won" },
+        { nome: "Sem momento", passo: "lost" },
+      ],
+    },
+  },
+  {
     id: "curso",
     comoSeApresenta: "Curso, mentoria ou infoproduto",
     proposta: {

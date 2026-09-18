@@ -195,7 +195,7 @@ export function QuadroClient({
             {atual.colunas.join(" → ")}
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            {t("Este é o quadro padrão, feito para loja online. Ao continuar, ele é substituído pelo de cima.")}
+            {t("Este é o quadro padrão que veio na instalação. Se ele já tiver clientes ou integrações, o novo modelo vira o padrão sem mover nem apagar o que já existe.")}
           </p>
         </details>
       ) : null}
