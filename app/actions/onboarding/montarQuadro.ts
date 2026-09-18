@@ -22,8 +22,17 @@ import {
   validarProposta,
   type PropostaDeFunil,
 } from "@/lib/onboarding/proposta-de-funil";
-import { escolherPacotePorTexto, sugerirFunil, type Sugestao } from "@/lib/onboarding/sugerir-funil";
-import { requireOnboardingCtx, patchOnboardingState, loadOnboardingState, OnboardingError } from "./_shared";
+import {
+  escolherPacotePorTexto,
+  sugerirFunil,
+  type Sugestao,
+} from "@/lib/onboarding/sugerir-funil";
+import {
+  requireOnboardingCtx,
+  patchOnboardingState,
+  loadOnboardingState,
+  OnboardingError,
+} from "./_shared";
 
 /** O funil que o gatilho semeou — o que a pessoa tem antes deste passo. */
 export interface QuadroAtual {
@@ -196,7 +205,8 @@ export async function aplicarQuadro(formData: FormData): Promise<ResultadoDoQuad
   try {
     ctx = await requireOnboardingCtx();
   } catch (err) {
-    if (err instanceof OnboardingError) return { ok: false, erro: "Sua sessão expirou. Entre de novo." };
+    if (err instanceof OnboardingError)
+      return { ok: false, erro: "Sua sessão expirou. Entre de novo." };
     throw err;
   }
 
@@ -297,7 +307,7 @@ async function criarQuadroPreservandoAtual(args: {
   atual: QuadroAtual;
   proposta: PropostaDeFunil;
   slug: string;
-}): Promise<{ ok: true; pipelineId: string } | ResultadoDoQuadro> {
+}): Promise<{ ok: true; pipelineId: string } | { ok: false; erro: string }> {
   const { admin, orgId, atual, proposta, slug } = args;
   const { data: novo, error: novoErro } = await admin
     .from("crm_pipelines")
@@ -310,7 +320,11 @@ async function criarQuadroPreservandoAtual(args: {
     })
     .select("id")
     .single();
-  if (novoErro || !novo) return { ok: false, erro: "Não consegui criar o novo quadro. Seus clientes não foram alterados." };
+  if (novoErro || !novo)
+    return {
+      ok: false,
+      erro: "Não consegui criar o novo quadro. Seus clientes não foram alterados.",
+    };
 
   const pipelineId = novo.id as string;
   const { error: etapasErro } = await admin.from("crm_stages").insert(
@@ -327,7 +341,10 @@ async function criarQuadroPreservandoAtual(args: {
   );
   if (etapasErro) {
     await admin.from("crm_pipelines").delete().eq("id", pipelineId).eq("organization_id", orgId);
-    return { ok: false, erro: "Não consegui montar as colunas do novo quadro. Seus clientes não foram alterados." };
+    return {
+      ok: false,
+      erro: "Não consegui montar as colunas do novo quadro. Seus clientes não foram alterados.",
+    };
   }
 
   // O índice de padrão é imediato: libera o antigo, depois ocupa o lugar. Se
@@ -344,10 +361,17 @@ async function criarQuadroPreservandoAtual(args: {
       .eq("id", pipelineId)
       .eq("organization_id", orgId);
     if (!elegerErro) return { ok: true, pipelineId };
-    await admin.from("crm_pipelines").update({ is_default: true }).eq("id", atual.pipelineId).eq("organization_id", orgId);
+    await admin
+      .from("crm_pipelines")
+      .update({ is_default: true })
+      .eq("id", atual.pipelineId)
+      .eq("organization_id", orgId);
   }
   await admin.from("crm_pipelines").delete().eq("id", pipelineId).eq("organization_id", orgId);
-  return { ok: false, erro: "Não consegui definir o novo quadro como padrão. Seus clientes não foram alterados." };
+  return {
+    ok: false,
+    erro: "Não consegui definir o novo quadro como padrão. Seus clientes não foram alterados.",
+  };
 }
 
 async function finalizarQuadro(args: {
@@ -361,10 +385,19 @@ async function finalizarQuadro(args: {
   const { ctx, pipelineId, origem, etapas, nome, preservouQuadroAnterior } = args;
   try {
     await patchOnboardingState(ctx.orgId, {
-      funil: { pipeline_id: pipelineId, origem, etapas, preservou_quadro_anterior: preservouQuadroAnterior },
+      funil: {
+        pipeline_id: pipelineId,
+        origem,
+        etapas,
+        preservou_quadro_anterior: preservouQuadroAnterior,
+      },
     });
   } catch (err) {
-    if (err instanceof OnboardingError) return { ok: false, erro: "Salvei o quadro, mas não consegui registrar o passo. Tente continuar de novo." };
+    if (err instanceof OnboardingError)
+      return {
+        ok: false,
+        erro: "Salvei o quadro, mas não consegui registrar o passo. Tente continuar de novo.",
+      };
     throw err;
   }
 

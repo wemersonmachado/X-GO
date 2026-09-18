@@ -111,6 +111,7 @@ export const onboardingStateSchema = z.object({
       pipeline_id: z.string().optional(),
       origem: z.enum(["ia", "pacote"]).optional(),
       etapas: z.number().optional(),
+      preservou_quadro_anterior: z.boolean().optional(),
       skipped: z.boolean().optional(),
     })
     .optional(),
