@@ -48,11 +48,14 @@ describe("cadastro somente por convite", () => {
     expect((email as HTMLInputElement).value).toBe(convite.email);
   });
 
-  it("orienta quem já possui conta a entrar, sem trocar o destinatário", async () => {
+  it("leva conta existente ao login preservando o mesmo convite", async () => {
     signUp.mockResolvedValue({ ok: false, error: "account_exists" });
     render(<SignupForm convite={convite} />);
     await preencherEEnviar();
-    expect(await screen.findByText(/já possui uma conta/i)).toBeTruthy();
-    expect(replace).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith(
+        `/login?next=${encodeURIComponent(`/team/accept-invite/${convite.token}`)}`,
+      ),
+    );
   });
 });
