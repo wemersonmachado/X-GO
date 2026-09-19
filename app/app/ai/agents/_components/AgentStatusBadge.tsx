@@ -35,7 +35,15 @@ export function deriveAgentStatus(agent: AgentRow): AgentStatus {
   // `AgentRow` traz `paused_at` como opcional (o tipo vem da linha do banco),
   // e `FatosDoAgente` o exige justamente para que consulta sem a coluna não
   // compile. Aqui a página SELECIONA a coluna, então normalizar é honesto.
-  switch (estadoDoAgente({ ...agent, paused_at: agent.paused_at ?? null })) {
+  const estado = estadoDoAgente({ ...agent, paused_at: agent.paused_at ?? null });
+  // `estadoDoAgente` chama tanto draft quanto pausa explícita de "parado"
+  // porque, para o runtime, ambos significam a mesma coisa: não responder.
+  // A lista precisa preservar a diferença para os filtros e para oferecer
+  // "Despausar" somente a quem já possui versão publicada.
+  if (estado === "parado" && agent.paused_at != null && agent.published_version_id != null) {
+    return "paused";
+  }
+  switch (estado) {
     case "arquivado":
       return "archived";
     case "no_ar":

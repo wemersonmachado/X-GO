@@ -7,7 +7,9 @@ import { toast } from "sonner";
 import {
   useApiTokens,
   useCreateApiToken,
+  useDeleteApiToken,
   useRevokeApiToken,
+  type ApiTokenRow,
   type CreatedApiToken,
 } from "@/hooks/team/useApiTokens";
 import { copyToClipboard } from "@/lib/clipboard";
@@ -32,6 +34,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useT } from "@/hooks/i18n/useT";
+import { Trash } from "@/lib/ui/icons";
 
 /**
  * `mcp:read`/`mcp:write` faltavam nesta lista, e sem eles NENHUMA ferramenta
@@ -64,12 +67,14 @@ export function ApiTokensClient() {
   const { data, isLoading } = useApiTokens();
   const create = useCreateApiToken();
   const revoke = useRevokeApiToken();
+  const remove = useDeleteApiToken();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState("");
   const [scopes, setScopes] = useState<string[]>([]);
   const [expiresInDays, setExpiresInDays] = useState<string>("");
   const [created, setCreated] = useState<CreatedApiToken | null>(null);
+  const [tokenToDelete, setTokenToDelete] = useState<ApiTokenRow | null>(null);
 
   const tokens = data?.data ?? [];
 
@@ -163,7 +168,18 @@ export function ApiTokensClient() {
                       >
                         {t("Revogar")}
                       </Button>
-                    ) : null}
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={remove.isPending}
+                        aria-label={t("Excluir token definitivamente")}
+                        onClick={() => setTokenToDelete(tok)}
+                      >
+                        <Trash size={14} aria-hidden className="mr-1" />
+                        {t("Excluir")}
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -267,6 +283,40 @@ export function ApiTokensClient() {
           ) : null}
           <DialogFooter>
             <Button onClick={() => setCreated(null)}>{t("Fechar")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!tokenToDelete} onOpenChange={(open) => !open && setTokenToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("Excluir token definitivamente")}</DialogTitle>
+            <DialogDescription>
+              {t("O token revogado será removido do cadastro. O registro da ação permanece na auditoria e esta ação não pode ser desfeita.")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={remove.isPending}
+              onClick={() => setTokenToDelete(null)}
+            >
+              {t("Cancelar")}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={remove.isPending || !tokenToDelete}
+              onClick={async () => {
+                if (!tokenToDelete) return;
+                await remove.mutateAsync(tokenToDelete.id);
+                setTokenToDelete(null);
+                toast.success(t("Token excluído definitivamente."));
+              }}
+            >
+              {remove.isPending ? t("Excluindo…") : t("Excluir definitivamente")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

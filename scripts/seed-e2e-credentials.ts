@@ -147,10 +147,10 @@ async function ensureOrg(): Promise<string> {
 
 /**
  * A organização-base da suíte tem cinco perfis permanentes (incluindo o dono
- * da plataforma). O plano Standard possui três assentos, portanto o próprio
- * seed declara a capacidade de teste antes de criar memberships. Isso mantém
- * a trava comercial ativa: somente este ambiente de teste usa o entitlement
- * manual Pro, gravado pelo service role.
+ * da plataforma), canais e agentes de várias specs. O próprio seed declara
+ * capacidade ampla antes de criar os recursos. Isso mantém a trava comercial
+ * ativa: somente este ambiente de teste usa o entitlement manual Enterprise,
+ * gravado pelo service role.
  */
 async function ensureTestPlanEntitlement(orgId: string): Promise<void> {
   const { error } = await admin
@@ -158,7 +158,7 @@ async function ensureTestPlanEntitlement(orgId: string): Promise<void> {
     .upsert(
       {
         organization_id: orgId,
-        plan_slug: "pro",
+        plan_slug: "enterprise",
         source: "manual",
         status: "active",
         updated_at: new Date().toISOString(),
@@ -166,7 +166,7 @@ async function ensureTestPlanEntitlement(orgId: string): Promise<void> {
       { onConflict: "organization_id" },
     );
   if (error) throw new Error(`test plan entitlement: ${error.message}`);
-  console.log("[seed] plan entitlement: pro");
+  console.log("[seed] plan entitlement: enterprise");
 }
 
 async function ensureUser(email: string, full_name: string): Promise<string> {

@@ -675,6 +675,31 @@ jobs:
             exit "$status"
           fi
 
+      # As specs criam organizações isoladas para provar RLS, convites e
+      # onboarding. Este banco existe apenas neste job; dar capacidade Enterprise
+      # a essas fixtures impede que a cota comercial esconda o comportamento que
+      # cada cenário foi escrito para verificar. Produção e o baseline não são
+      # alterados: o trigger nasce somente depois do baseline local.
+      - name: Dar capacidade às organizações de fixture do E2E
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v ON_ERROR_STOP=1 -q <<'SQL'
+          create schema if not exists test_harness;
+          create or replace function test_harness.give_e2e_fixture_capacity() returns trigger
+          language plpgsql set search_path = '' as $$
+          begin
+            insert into public.organization_plan_entitlements
+              (organization_id, plan_slug, source, status)
+            values (new.id, 'enterprise', 'manual', 'active')
+            on conflict (organization_id) do nothing;
+            return new;
+          end; $$;
+          drop trigger if exists trg_e2e_fixture_capacity on public.organizations;
+          create trigger trg_e2e_fixture_capacity
+          after insert on public.organizations for each row
+          when ((new.settings->>'plan') is null)
+          execute function test_harness.give_e2e_fixture_capacity();
+          SQL
+
       # ⚠️ O REALTIME PRECISA REINICIAR DEPOIS DO BASELINE — senão ele assina e
       # não entrega, em silêncio.
       #

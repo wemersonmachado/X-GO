@@ -174,6 +174,11 @@ export function TestPanel({ agent, draft, published, readOnly }: Props) {
       const res = await apiClient.post<TestResponse>(
         `/api/v1/ai/agents/${agent.id}/versions/${target.id}/test`,
         body,
+        // Um preview chama um provider externo. O timeout genérico de 10 s
+        // abortava respostas válidas (a captura mediu 8,8 s) e ainda repetia o
+        // POST até três vezes. Uma tentativa com janela explícita é mais rápida,
+        // barata e não deixa runs duplicados.
+        { timeoutMs: 20_000, maxAttempts: 1 },
       );
       setResult(res.data);
       qc.invalidateQueries({ queryKey: agentRunsKey(agent.id) });
@@ -181,8 +186,10 @@ export function TestPanel({ agent, draft, published, readOnly }: Props) {
     } catch (err) {
       if (err instanceof ApiError) {
         toast.error(t(err.message) || `${t("Erro")}: ${err.code}`);
+      } else if (err instanceof DOMException && err.name === "AbortError") {
+        toast.error(t("O provedor demorou mais de 20 segundos. Tente novamente em instantes."));
       } else {
-        toast.error(t("Erro inesperado."));
+        toast.error(t("Não foi possível concluir o teste. Verifique a conexão e tente novamente."));
       }
     } finally {
       setPending(false);

@@ -15,7 +15,10 @@ export function useAgentsList(opts?: { initialData?: AgentRow[] }) {
     queryKey: agentsListQueryKey,
     queryFn: async () => {
       try {
-        const res = await apiClient.get<ListResponse>("/api/v1/ai/agents");
+        // A filtragem é feita na própria tela. Se este refetch não trouxer os
+        // arquivados, ele substitui o initialData completo por uma lista parcial
+        // e o filtro "Arquivado" fica vazio até um F5.
+        const res = await apiClient.get<ListResponse>("/api/v1/ai/agents?include_archived=true");
         return res.data;
       } catch (err) {
         showApiError(err);
@@ -23,5 +26,6 @@ export function useAgentsList(opts?: { initialData?: AgentRow[] }) {
       }
     },
     initialData: opts?.initialData,
+    refetchOnMount: "always",
   });
 }

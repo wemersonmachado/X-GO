@@ -357,6 +357,22 @@ test.describe("o wizard monta um funcionário", () => {
     // `normalizarProposta` DESCARTA nome vazio. Sem esta trava, a pessoa
     // acrescenta uma coluna, esquece de nomeá-la, salva, avança — e a coluna
     // simplesmente não existe.
+    // O cenário anterior confirma um modelo e avança para testar. Este volta
+    // somente o marcador do funil para exercitar a edição sem desfazer o quadro
+    // que já foi montado nem depender da ordem implícita das rotas.
+    const { data: organization } = await svc
+      .from("organizations")
+      .select("onboarding_state")
+      .eq("id", orgId)
+      .single();
+    const state = { ...((organization?.onboarding_state as Record<string, unknown> | null) ?? {}) };
+    delete state.funil;
+    const { error: resetError } = await svc
+      .from("organizations")
+      .update({ onboarding_state: state } as never)
+      .eq("id", orgId);
+    if (resetError) throw resetError;
+
     await login(page);
     await page.waitForURL(/\/onboarding\/funil/, { timeout: 30_000 });
 

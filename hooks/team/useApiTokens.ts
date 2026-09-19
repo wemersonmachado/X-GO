@@ -55,3 +55,20 @@ export function useRevokeApiToken() {
     },
   });
 }
+
+export function useDeleteApiToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) =>
+      apiClient.delete<{ data: { id: string; deleted: true } }>(
+        `/api/v1/settings/api-tokens/${id}`,
+      ),
+    onError: showApiError,
+    onSuccess: (_response, id) => {
+      qc.setQueryData<{ data: ApiTokenRow[] }>(["api-tokens"], (current) =>
+        current ? { ...current, data: current.data.filter((token) => token.id !== id) } : current,
+      );
+      void qc.invalidateQueries({ queryKey: ["api-tokens"] });
+    },
+  });
+}

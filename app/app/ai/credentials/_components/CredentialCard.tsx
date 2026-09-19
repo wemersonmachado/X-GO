@@ -1,10 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-
-import { refreshCredentialsView } from "../_actions";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,7 +59,6 @@ const STATUS_VARIANT: Record<CredentialStatus, "default" | "secondary" | "destru
 
 export function CredentialCard({ credential, canWrite, usageCount }: Props) {
   const t = useT();
-  const router = useRouter();
   const qc = useQueryClient();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -89,11 +85,12 @@ export function CredentialCard({ credential, canWrite, usageCount }: Props) {
     startTransition(async () => {
       try {
         await apiClient.delete(`/api/v1/ai/credentials/${credential.id}`);
+        qc.setQueryData<CredentialRow[]>(credentialsListQueryKey, (current) =>
+          current?.filter((row) => row.id !== credential.id),
+        );
         toast.success(t("Credencial removida."));
         setDeleteOpen(false);
-        await qc.invalidateQueries({ queryKey: credentialsListQueryKey });
-        await refreshCredentialsView();
-        router.refresh();
+        void qc.invalidateQueries({ queryKey: credentialsListQueryKey });
       } catch (err) {
         showApiError(err);
       }
