@@ -17,6 +17,14 @@ nativa. Monetização = self-host em VPS, não assinatura. Posicionamento: [`VIS
 Quem instala numa VPS **é** o usuário. Uma mudança que funciona na máquina do dev e
 quebra no clone fresco é um bug de produto, não um detalhe de ambiente.
 
+## Estado operacional temporário da Railway
+
+A instalação de homologação pode estar no modo econômico, com apenas o `app` em
+Serverless e os processos operacionais parados. Antes de testar WhatsApp, IA,
+filas, checkout completo ou fazer deploy, leia
+[`MODO-ECONOMICO-RAILWAY.md`](MODO-ECONOMICO-RAILWAY.md). Não apague o volume do
+WAHA e não declare produção pronta com a pilha parcial.
+
 ## Stack (CONFIRMADO em `package.json`)
 
 Next.js 16 (App Router) · React 19 · TypeScript 6 estrito · Tailwind 4 ·
